@@ -3,7 +3,6 @@
   "name": "sp-crew-control-relay",
   "functions": {
     "api/**/*.js": {
-      "runtime": "nodejs18.x",
       "maxDuration": 30
     }
   },
