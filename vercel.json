@@ -1,7 +1,6 @@
 {
   "version": 2,
   "name": "sp-crew-control-relay",
-  "description": "Message relay service for SP Crew Control V2 - coordinates cross-network communication and session management",
   "functions": {
     "api/**/*.js": {
       "runtime": "nodejs18.x",
