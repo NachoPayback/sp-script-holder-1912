@@ -3,38 +3,37 @@
 Minimizes all open windows temporarily then restores them
 """
 
-import time
 import subprocess
-import ctypes
-from ctypes import wintypes
+import time
+
 
 def minimize_restore_windows():
     """Minimize all windows then restore them after 5 seconds"""
-    
+
     try:
         print("Minimizing all windows...")
-        
+
         # Method 1: Use Windows+D shortcut to show desktop
         # This is reversible with another Windows+D
         import pyautogui
-        
+
         # Press Windows+D to minimize all
         pyautogui.hotkey('win', 'd')
-        
+
         print("All windows minimized! Waiting 5 seconds...")
-        
+
         # Wait 5 seconds
         time.sleep(5)
-        
+
         # Press Windows+D again to restore
         pyautogui.hotkey('win', 'd')
-        
+
         print("Windows restored!")
         return True
-        
+
     except Exception as e:
         print(f"Error during window operation: {e}")
-        
+
         # Backup method using PowerShell
         try:
             restore_cmd = '''
@@ -42,9 +41,9 @@ def minimize_restore_windows():
             '''
             subprocess.run(["powershell", "-Command", restore_cmd], timeout=2)
             print("Windows restored using backup method")
-        except:
+        except Exception:
             pass
-            
+
         return False
 
 if __name__ == "__main__":

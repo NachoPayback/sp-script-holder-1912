@@ -3,9 +3,9 @@
 Plays a random Windows system sound effect
 """
 
-import os
 import random
 import winsound
+
 
 def play_random_sound():
     """Play a random Windows system sound"""
@@ -18,10 +18,10 @@ def play_random_sound():
         "SystemExit",      # Windows Exit
         "SystemStart",     # Windows Startup
     ]
-    
+
     # Pick a random sound
     sound = random.choice(sounds)
-    
+
     try:
         # Play the sound
         winsound.PlaySound(sound, winsound.SND_ALIAS)
@@ -32,4 +32,4 @@ def play_random_sound():
         return False
 
 if __name__ == "__main__":
-    play_random_sound() 
+    play_random_sound()

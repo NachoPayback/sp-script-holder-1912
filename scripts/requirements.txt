@@ -1,0 +1,6 @@
+pyautogui
+requests
+rotatescreen
+selenium
+win32com
+winreg

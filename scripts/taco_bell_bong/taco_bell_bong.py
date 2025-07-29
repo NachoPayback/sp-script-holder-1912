@@ -5,7 +5,7 @@ Plays the iconic Taco Bell bong sound
 
 import os
 import subprocess
-import sys
+
 
 def play_taco_bell_bong():
     """Play the Taco Bell bong sound using the MP3 file"""
@@ -13,28 +13,28 @@ def play_taco_bell_bong():
         # Get the directory where the script is located (same folder as audio file)
         script_dir = os.path.dirname(os.path.abspath(__file__))
         audio_file = os.path.join(script_dir, "taco-bell-bong-sfx.mp3")
-        
+
         if not os.path.exists(audio_file):
             raise FileNotFoundError(f"Audio file not found: {audio_file}")
-        
+
         # Play the MP3 file using Windows Media Player
         subprocess.run([
-            "powershell", "-Command", 
-            f"Add-Type -AssemblyName presentationCore; " +
-            f"$mediaPlayer = New-Object system.windows.media.mediaplayer; " +
+            "powershell", "-Command",
+            "Add-Type -AssemblyName presentationCore; " +
+            "$mediaPlayer = New-Object system.windows.media.mediaplayer; " +
             f"$mediaPlayer.open([uri]'{audio_file}'); " +
-            f"$mediaPlayer.Play(); " +
-            f"Start-Sleep -Seconds 3"
+            "$mediaPlayer.Play(); " +
+            "Start-Sleep -Seconds 3"
         ], check=True, capture_output=True)
-        
+
         return True
-        
-    except Exception as e:
+
+    except Exception:
         # Fallback to system sound if MP3 playback fails
         try:
             import winsound
             winsound.MessageBeep(winsound.MB_ICONASTERISK)
-        except:
+        except Exception:
             pass
         return False
 

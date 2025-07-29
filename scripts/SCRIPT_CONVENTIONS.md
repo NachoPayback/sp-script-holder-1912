@@ -8,6 +8,9 @@ All scripts are managed through Git version control. To add or update scripts:
 3. **Commit and push** changes to the repository
 4. **Hub automatically syncs** scripts from the configured Git repository
 
+## Dependencies
+All script dependencies are managed centrally through the main project's `pyproject.toml` file. Scripts should assume all required packages are already installed. Do NOT create separate `requirements.txt` files in the scripts directory.
+
 ## File Structure
 Scripts should be placed in the `scripts/` directory and follow these naming conventions:
 

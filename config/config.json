@@ -1,0 +1,8 @@
+{
+  "nats_url": "nats://demo.nats.io:4222",
+  "subject_prefix": "automation",
+  "git_repo_url": "https://github.com/NachoPayback/sp-script-holder-1912.git",
+  "hotkey_combo": ["ctrl", "alt", "s", "p"],
+  "command_timeout": 30,
+  "max_remotes": 6
+} 

@@ -3,10 +3,11 @@
 Randomly applies Windows color filters for 10 seconds using Magnification API
 """
 
-import time
-import random
 import ctypes
-from ctypes import wintypes, POINTER, Structure, c_float
+import random
+import time
+from ctypes import POINTER, Structure, c_float
+
 
 # Windows Magnification API structures and constants
 class MAGCOLOREFFECT(Structure):
@@ -15,7 +16,7 @@ class MAGCOLOREFFECT(Structure):
 # Load Magnification API
 try:
     mag = ctypes.windll.Magnification
-except:
+except Exception:
     mag = None
 
 # Color effect matrices for different filters
@@ -71,21 +72,21 @@ def apply_color_matrix(matrix):
     """Apply a color transformation matrix using Magnification API"""
     if not mag:
         return False
-    
+
     try:
         # Initialize Magnification API
         if not mag.MagInitialize():
             return False
-        
+
         # Create color effect structure
         effect = MAGCOLOREFFECT()
         for i in range(5):
             for j in range(5):
                 effect.transform[i][j] = matrix[i * 5 + j]
-        
+
         # Apply the color effect
         result = mag.MagSetFullscreenColorEffect(POINTER(MAGCOLOREFFECT)(effect))
-        
+
         return bool(result)
     except Exception as e:
         print(f"Error applying color effect: {e}")
@@ -97,7 +98,7 @@ def reset_color_effect():
 
 def color_filter_chaos():
     """Apply random color filter for 10 seconds"""
-    
+
     # Available filters
     filters = [
         ("Grayscale", GRAYSCALE_MATRIX),
@@ -106,26 +107,26 @@ def color_filter_chaos():
         ("Protanopia (Red-Green)", PROTANOPIA_MATRIX),
         ("Tritanopia (Blue-Yellow)", TRITANOPIA_MATRIX),
     ]
-    
+
     # Choose random filter
     filter_name, filter_matrix = random.choice(filters)
     print(f"Applying {filter_name} filter...")
-    
+
     # Apply the filter
     if apply_color_matrix(filter_matrix):
         print(f"Color filter '{filter_name}' applied!")
-        
+
         # Wait 10 seconds
         time.sleep(10)
-        
+
         # Restore normal colors
         print("Restoring original colors...")
         reset_color_effect()
-        
+
         # Uninitialize Magnification API
         if mag:
             mag.MagUninitialize()
-        
+
         print("Colors restored!")
     else:
         print("Failed to apply color filter - Magnification API may not be available")

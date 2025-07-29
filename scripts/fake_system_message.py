@@ -6,9 +6,10 @@ Displays authentic Windows toast notifications
 import random
 import subprocess
 
+
 def show_system_notification():
     """Show a Windows 10/11 toast notification that looks completely authentic"""
-    
+
     # List of authentic system notification messages
     notifications = [
         {
@@ -42,11 +43,11 @@ def show_system_notification():
             "app": "Network & Internet"
         }
     ]
-    
+
     try:
         # Pick a random notification
         notif = random.choice(notifications)
-        
+
         # Create a visible message box that looks like a system notification
         ps_script = f'''
 Add-Type -AssemblyName System.Windows.Forms
@@ -91,12 +92,12 @@ $timer.Start()
 # Show the form
 $form.ShowDialog() | Out-Null
 '''
-        
+
         # Execute PowerShell script to show native notification
         result = subprocess.run([
             "powershell", "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass", "-Command", ps_script
         ], capture_output=True, text=True, timeout=15)
-        
+
         if result.returncode == 0:
             print(f"Successfully displayed balloon notification: {notif['title']} - {notif['message']}")
             return True
@@ -107,11 +108,11 @@ $form.ShowDialog() | Out-Null
                 print(f"PowerShell stderr: {result.stderr}")
             if result.stdout:
                 print(f"PowerShell stdout: {result.stdout}")
-            
+
             # Fallback: just print to console as a basic notification
             print(f"[NOTIFICATION] {notif['title']}: {notif['message']}")
             return True
-        
+
     except subprocess.TimeoutExpired:
         print("Notification timeout")
         return False
@@ -120,4 +121,4 @@ $form.ShowDialog() | Out-Null
         return False
 
 if __name__ == "__main__":
-    show_system_notification() 
+    show_system_notification()
