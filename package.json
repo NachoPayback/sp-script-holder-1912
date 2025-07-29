@@ -12,7 +12,6 @@
   "devDependencies": {},
   "scripts": {
     "dev": "vercel dev",
-    "build": "echo 'Build complete'",
     "deploy": "vercel --prod"
   },
   "keywords": [
