@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crew Control - Remote Access</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 20px;
+        }
+        .title {
+            font-size: 2.2em;
+            color: #495057;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .subtitle {
+            color: #6c757d;
+            font-size: 1.1em;
+        }
+        
+        /* Login Form */
+        .login-section {
+            max-width: 400px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #495057;
+            font-weight: 500;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            background: #fff;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            color: #495057;
+            font-size: 1em;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+        
+        .btn {
+            background: #0d6efd;
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 5px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        .btn:hover {
+            background: #0b5ed7;
+            transform: translateY(-1px);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-secondary {
+            background: #6c757d;
+        }
+        .btn-secondary:hover {
+            background: #5c636a;
+        }
+        
+        /* Main App */
+        .main-app {
+            display: none;
+        }
+        .section {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .section h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+        
+        .hub-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .hub-item {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .hub-item:hover {
+            border-color: #0d6efd;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .hub-item.connected {
+            border-color: #198754;
+            background: #f8fff9;
+        }
+        
+        .script-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .script-btn {
+            padding: 16px;
+            font-size: 1em;
+            text-align: center;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        
+        .result-display {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 16px;
+            margin-top: 16px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+            font-size: 0.9em;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .result-success { 
+            border-color: #198754;
+            background: #f8fff9;
+        }
+        .result-error { 
+            border-color: #dc3545;
+            background: #fff8f8;
+            color: #dc3545;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+            padding: 20px;
+        }
+        
+        .error {
+            color: #dc3545;
+            text-align: center;
+            margin-top: 12px;
+            padding: 8px;
+            background: #fff8f8;
+            border-radius: 4px;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .user-info {
+            text-align: right;
+            margin-bottom: 20px;
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+        
+        .success-message {
+            background: #d1e7dd;
+            color: #0f5132;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #badbcc;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+        .status-online {
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+        .status-offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">Crew Control</h1>
+            <p class="subtitle">Remote Access Portal</p>
+        </div>
+        
+        <!-- Login Section -->
+        <div class="login-section" id="loginSection">
+            <h3 style="color: #495057; margin-bottom: 24px;">Sign In</h3>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" name="username" required placeholder="Enter your username">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required placeholder="Enter your password">
+                </div>
+                
+                <button type="submit" class="btn">Sign In</button>
+            </form>
+            
+            <div id="loginError" class="error" style="display: none;"></div>
+        </div>
+        
+        <!-- Main Application -->
+        <div class="main-app" id="mainApp">
+            <div class="user-info">
+                Signed in as: <strong id="currentUser"></strong>
+                <button class="btn btn-secondary" onclick="logout()" style="margin-left: 12px; padding: 6px 12px; font-size: 0.85em;">Sign Out</button>
+            </div>
+            
+            <!-- Hub Discovery -->
+            <div class="section">
+                <h3>Available Hubs</h3>
+                <button class="btn" onclick="discoverHubs()">🔍 Discover Hubs</button>
+                <div id="hubList" class="hub-list"></div>
+            </div>
+            
+            <!-- Script Control -->
+            <div class="section" id="scriptSection" style="display: none;">
+                <h3>Available Scripts - <span id="connectedHubName"></span></h3>
+                <div id="scriptGrid" class="script-grid"></div>
+                <div id="executionResult" class="result-display" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let authToken = null;
+        let currentUser = null;
+        let connectedHub = null;
+        let hubScripts = [];
+        
+        // Check for existing session on load
+        window.onload = function() {
+            const token = localStorage.getItem('crewControlToken');
+            if (token) {
+                verifyToken(token);
+            }
+        };
+        
+        // Login form handler
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('/api/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    authToken = data.token;
+                    currentUser = data.user;
+                    localStorage.setItem('crewControlToken', authToken);
+                    showMainApp();
+                } else {
+                    showError('loginError', data.error);
+                }
+            } catch (error) {
+                showError('loginError', 'Connection error: ' + error.message);
+            }
+        });
+        
+        async function verifyToken(token) {
+            try {
+                const response = await fetch('/api/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+                
+                const data = await response.json();
+                
+                if (data.valid) {
+                    authToken = token;
+                    currentUser = data.user;
+                    showMainApp();
+                } else {
+                    localStorage.removeItem('crewControlToken');
+                }
+            } catch (error) {
+                localStorage.removeItem('crewControlToken');
+            }
+        }
+        
+        function showMainApp() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+            document.getElementById('currentUser').textContent = currentUser.username;
+            discoverHubs();
+        }
+        
+        function logout() {
+            authToken = null;
+            currentUser = null;
+            connectedHub = null;
+            localStorage.removeItem('crewControlToken');
+            
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('mainApp').style.display = 'none';
+            document.getElementById('scriptSection').style.display = 'none';
+            
+            // Clear form
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('loginError').style.display = 'none';
+        }
+        
+        async function discoverHubs() {
+            try {
+                const response = await fetch('/api/hubs');
+                const data = await response.json();
+                
+                const hubList = document.getElementById('hubList');
+                hubList.innerHTML = '';
+                
+                if (data.hubs.length === 0) {
+                    hubList.innerHTML = '<div class="loading">No active hubs found. Make sure Hub Workers are running.</div>';
+                    return;
+                }
+                
+                data.hubs.forEach(hub => {
+                    const hubItem = document.createElement('div');
+                    hubItem.className = 'hub-item';
+                    if (connectedHub && connectedHub.hub_id === hub.hub_id) {
+                        hubItem.className += ' connected';
+                    }
+                    
+                    hubItem.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-weight: 600; font-size: 1.1em;">${hub.hub_name}</div>
+                                <div style="color: #6c757d; font-size: 0.9em; margin-top: 4px;">
+                                    ${hub.script_count} scripts • Last seen: ${new Date(hub.last_heartbeat).toLocaleTimeString()}
+                                </div>
+                            </div>
+                            <span class="status-badge status-${hub.status === 'online' ? 'online' : 'offline'}">
+                                ${hub.status}
+                            </span>
+                        </div>
+                    `;
+                    hubItem.onclick = () => connectToHub(hub);
+                    hubList.appendChild(hubItem);
+                });
+            } catch (error) {
+                console.error('Hub discovery error:', error);
+            }
+        }
+        
+        function connectToHub(hub) {
+            connectedHub = hub;
+            hubScripts = hub.scripts;
+            
+            document.getElementById('connectedHubName').textContent = hub.hub_name;
+            document.getElementById('scriptSection').style.display = 'block';
+            
+            showScripts();
+            discoverHubs(); // Refresh to show connected state
+        }
+        
+        function showScripts() {
+            const grid = document.getElementById('scriptGrid');
+            grid.innerHTML = '';
+            
+            if (hubScripts.length === 0) {
+                grid.innerHTML = '<div class="loading">No scripts available on this hub</div>';
+                return;
+            }
+            
+            hubScripts.forEach(script => {
+                const button = document.createElement('button');
+                button.className = 'btn script-btn';
+                button.textContent = script.display_name || script.name;
+                button.onclick = () => executeScript(script.name);
+                grid.appendChild(button);
+            });
+        }
+        
+        async function executeScript(scriptName) {
+            if (!connectedHub) {
+                alert('No hub connected');
+                return;
+            }
+            
+            const resultDiv = document.getElementById('executionResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result-display';
+            resultDiv.innerHTML = '<strong>⏳ Executing ' + scriptName + '...</strong>';
+            
+            try {
+                const response = await fetch('/api/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        hub_id: connectedHub.hub_id,
+                        script_name: scriptName,
+                        remote_id: 'web-' + Math.random().toString(36).substr(2, 9)
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.className = 'result-display result-success';
+                    resultDiv.innerHTML = `
+                        <div style="font-weight: 600; color: #198754; margin-bottom: 8px;">✅ Success</div>
+                        <div><strong>Script:</strong> ${scriptName}</div>
+                        <div><strong>Duration:</strong> ${result.duration_ms}ms</div>
+                        <div><strong>Output:</strong></div>
+                        <pre style="margin-top: 8px; white-space: pre-wrap;">${result.output || 'No output'}</pre>
+                    `;
+                } else {
+                    resultDiv.className = 'result-display result-error';
+                    resultDiv.innerHTML = `
+                        <div style="font-weight: 600; margin-bottom: 8px;">❌ Error</div>
+                        <div><strong>Script:</strong> ${scriptName}</div>
+                        <div><strong>Error:</strong> ${result.error}</div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.className = 'result-display result-error';
+                resultDiv.innerHTML = `<strong>❌ Connection Error</strong><br>${error.message}`;
+            }
+        }
+        
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Auto-refresh hubs every 30 seconds
+        setInterval(() => {
+            if (authToken && document.getElementById('mainApp').style.display !== 'none') {
+                discoverHubs();
+            }
+        }, 30000);
+    </script>
+</body>
+</html>
