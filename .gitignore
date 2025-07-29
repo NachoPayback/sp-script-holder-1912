@@ -54,3 +54,4 @@ uv_embedded/
 *.temp
 *.bak
 *.backup
+.vercel

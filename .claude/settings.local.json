@@ -65,7 +65,16 @@
       "Bash(npm uninstall:*)",
       "Bash(npm install:*)",
       "Bash(where claude)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "WebFetch(domain:sp-script-holder-1912.vercel.app)",
+      "mcp__supabase-community-supabase-mcp__list_projects",
+      "mcp__supabase-community-supabase-mcp__get_project",
+      "mcp__supabase-community-supabase-mcp__get_project_url",
+      "mcp__supabase-community-supabase-mcp__get_anon_key",
+      "WebFetch(domain:qcefzjjxnwccjivsbtgb.supabase.co)",
+      "mcp__supabase-community-supabase-mcp__apply_migration",
+      "mcp__supabase-community-supabase-mcp__execute_sql",
+      "mcp__supabase-community-supabase-mcp__list_tables"
     ],
     "deny": []
   }

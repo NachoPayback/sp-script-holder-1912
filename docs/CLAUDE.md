@@ -2,124 +2,188 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## 🎯 **CURRENT GOAL: SP CREW CONTROL V2 REWRITE**
 
-P_Buttons is a distributed automation system with two main components:
-- **Hub**: Python application that runs on target machines, manages automation scripts, and communicates via NATS
-- **Remote**: Flask web application that provides remote control interface
+**CRITICAL UNDERSTANDING:**
+- **V2 Architecture:** WebSocket-based real-time messaging through Vercel relay
+- **Core Flow:** Remote WebSocket → Vercel Relay → Hub WebSocket (millisecond response)
+- **Cross-Network:** One remote can control MULTIPLE hubs internationally
+- **Session Coordination:** Mode changes apply to ALL remotes in session instantly
+- **Real-Time:** Button presses must execute scripts instantly, no REST API delays
 
-## Common Commands
+## 🧠 **CORE METHODOLOGY & MINDSET**
 
-### Hub Application
+**Real-Time WebSocket Matrix Architecture:**
+```
+Multiple Remotes ←→ Vercel Relay Coordinator ←→ Multiple Hubs
+```
+
+**Fundamental Principles:**
+1. **Many-to-Many Connection:** Any number of remotes can control any number of hubs simultaneously
+2. **Session-Based Coordination:** Groups of remotes share session state (mode, assignments)
+3. **Instant Message Routing:** Button press → WebSocket message → target hub in milliseconds
+4. **Broadcast Synchronization:** Changes to session affect ALL participants immediately
+5. **Location Agnostic:** Hubs can be anywhere globally, examples are theoretical only
+
+**Connection Matrix:**
+- **Remote-to-Hub:** One remote can control multiple hubs in same session
+- **Hub-to-Remote:** One hub can be controlled by multiple remotes simultaneously  
+- **Session Coordination:** Mode changes (Single ↔ All Buttons) apply to ALL remotes in session
+- **Real-Time Broadcasting:** Any change broadcasts to ALL session participants instantly
+
+**Message Flow:**
+1. **Button Press:** Remote → Relay (routes to target hub) → Hub executes → Result back
+2. **Mode Change:** Remote → Relay → Broadcast to ALL remotes in session
+3. **Session Updates:** Any change synchronizes ALL participants in real-time
+
+**Success Criteria:**
+- **<100ms execution time** globally
+- **Instant synchronization** when any remote changes session state
+- **Scalable architecture** supporting any number of remotes/hubs
+- **Location independence** - works anywhere internationally
+
+**🚨 CRITICAL:** This is a real-time messaging coordinator, NOT REST APIs. WebSocket persistent connections only.
+
+## 🔧 **V2 SYSTEM ARCHITECTURE**
+
+### **Message Relay (Vercel - DEPLOYED)**
+- **Location:** `v2/message-relay/` 
+- **URL:** https://sp-script-holder-1912.vercel.app
+- **Purpose:** WebSocket coordinator for international hub/remote communication
+- **Technology:** Vercel serverless functions with WebSocket support
+- **Status:** Needs WebSocket rebuild for real-time coordination
+
+### **Hub Worker (Python)**
+- **Location:** `v2/hub-worker/app.py`
+- **Purpose:** Pure script executor that connects to relay via WebSocket
+- **Technology:** Python Flask + WebSocket client
+- **Status:** Needs WebSocket client integration
+
+### **Remote Controller (Python)**
+- **Location:** `v2/remote-controller/app.py`
+- **Purpose:** Web UI for button presses, connects to relay via WebSocket
+- **Technology:** Python Flask + WebSocket client + web interface
+- **Status:** Needs WebSocket client integration
+
+## 🎮 **CORE FEATURES THAT MUST WORK**
+
+### **Real-Time Button Execution**
+- Remote presses button → WebSocket message → Relay routes → Hub executes → Result back
+- **NO HTTP REQUEST/RESPONSE DELAYS**
+- Response time: milliseconds internationally
+
+### **Session Coordination (ALL REMOTES AT ONCE)**
+- **Mode Switching:** Single Button ↔ All Buttons affects ALL remotes in session
+- **Shuffle:** Reassigns scripts to ALL remotes simultaneously  
+- **Real-Time Updates:** When one remote changes mode, others see it instantly
+
+### **Multi-Hub Control**
+- One remote can control multiple hubs globally
+- "All Buttons" mode shows scripts from ALL hubs in session
+- Message routing: `{"target_hub": "hub_id", "script": "script_name"}`
+
+### **Session Management**
+- Multiple remotes join same session
+- Session includes multiple hubs
+- Coordinator tracks: who's in session, current mode, script assignments
+- Real-time sync between all participants
+
+## 📨 **MESSAGE PROTOCOL**
+
+### **WebSocket Message Format**
+```json
+{
+  "type": "execute_script|change_mode|shuffle|join_session",
+  "session_id": "session_123",
+  "target_hub": "hub_id",
+  "script_name": "move_mouse",
+  "remote_id": "remote_123",
+  "data": {}
+}
+```
+
+### **Communication Flows**
+1. **Execute Script:** Remote → Relay → Hub → Relay → Remote (result)
+2. **Mode Change:** Remote → Relay → ALL remotes in session (instant update)
+3. **Shuffle:** Remote → Relay → ALL remotes get new assignments
+4. **Session Updates:** Any change broadcasts to ALL session participants
+
+## 🚨 **CRITICAL SUCCESS CRITERIA**
+
+1. **Button press to script execution: < 100ms response time**
+2. **Mode changes apply to ALL remotes instantly**
+3. **One remote can control multiple international hubs**
+4. **Real-time coordination without page refreshes**
+5. **WebSocket persistent connections, not REST APIs**
+
+## 📁 **PROJECT STRUCTURE**
+
+```
+v2/
+├── message-relay/          # Vercel WebSocket coordinator (DEPLOYED)
+│   ├── api/               # Serverless functions
+│   └── package.json       # Node.js dependencies
+├── hub-worker/            # Python script executor
+│   ├── app.py            # WebSocket client + Flask monitoring
+│   └── requirements.txt   # Python dependencies
+└── remote-controller/     # Python web interface
+    ├── app.py            # WebSocket client + Flask web UI
+    └── requirements.txt   # Python dependencies
+```
+
+## 🎯 **IMMEDIATE OBJECTIVES**
+
+1. **Rebuild Message Relay:** WebSocket-based coordination in Vercel
+2. **Update Hub Worker:** WebSocket client connection to relay
+3. **Update Remote Controller:** WebSocket client for real-time button presses
+4. **Test Integration:** Verify cross-network real-time script execution
+5. **Deploy & Validate:** Ensure millisecond response times internationally
+
+## 💻 **DEVELOPMENT COMMANDS**
+
+### **Test V2 Components**
 ```bash
-# Run the hub (from project root)
-uv run python src/hub.py
+# Test Hub Worker
+cd v2/hub-worker
+python app.py --port 5002
 
-# Install dependencies (ALWAYS use UV, not pip)
-uv sync  # Installs all dependencies from pyproject.toml
-uv add <package-name>  # Add new dependency to pyproject.toml
+# Test Remote Controller  
+cd v2/remote-controller
+python app.py --port 5001
+
+# Deploy Message Relay
+cd v2/message-relay
+# (Vercel auto-deploys from GitHub)
 ```
 
-### Remote Application
+### **Legacy System (V1 - PRESERVED)**
 ```bash
-# Run the remote (from project root)
-cd src/remote
-python remote_app.py  # Runs on http://127.0.0.1:5001
+# Old system in legacy/ folder - DO NOT MODIFY
+cd legacy/src
+python hub.py      # Old hub (port 5000)
+cd legacy/src/remote  
+python remote_app.py  # Old remote (port 5001)
 ```
 
-### Testing
-```bash
-# Run tests (when available)
-pytest
-```
+## 🔄 **MESSAGE FLOW EXAMPLE**
 
-## Architecture
+**Button Press Flow:**
+1. User presses "Move Mouse" on Remote Controller web UI
+2. Remote sends WebSocket: `{"type":"execute_script","script":"move_mouse","target_hub":"hub_location_1"}`
+3. Vercel Relay routes message to target Hub WebSocket
+4. Target Hub executes move_mouse.py script
+5. Hub sends result back through Relay to Remote
+6. Remote UI updates with execution status
+7. **Total time: <100ms internationally**
 
-### Communication Flow
-1. Hub connects to NATS server and subscribes to control subjects
-2. Remote app connects to NATS and publishes commands
-3. Hub executes scripts locally based on received commands
-4. Pairing uses temporary codes displayed via Ctrl+Alt+S+P hotkey
+**Mode Change Flow:**
+1. Remote A clicks "All Buttons" mode
+2. Remote A sends: `{"type":"change_mode","mode":"all_buttons","session":"abc123"}`
+3. Relay updates session mode
+4. Relay broadcasts to ALL remotes in session: mode changed
+5. Remote B, C, D instantly switch to All Buttons view
+6. **All remotes synchronized in real-time**
 
-### Key Components
+---
 
-**Hub (`src/hub.py`)**:
-- Manages script execution and NATS messaging
-- Auto-connects remotes without pairing codes
-- Stores pairing info in `config/paired_remotes.json`
-- Logs activity to `logs/hub_*.log`
-
-**Remote (`src/remote/remote_app.py`)**:
-- Flask server with web UI for remote control
-- Auto-discovers and connects to available hubs
-- Communicates with hub via NATS messaging
-
-**Configuration (`config/config.json`)**:
-- NATS connection settings
-- Git repository URL for scripts
-- Hotkey configuration
-- Timeout and hub capacity settings
-
-### Script Management
-- **Git-Only Workflow**: All scripts managed through Git repository
-- Scripts stored in `scripts/` directory
-- Supports Python (.py), PowerShell (.ps1), Batch (.bat), and Executables (.exe)
-- Hub automatically syncs from configured `git_repo_url`
-- No script upload through web interface (removed for security)
-- Remotes can view and toggle scripts only
-- **Centralized Dependencies**: All script dependencies managed in main `pyproject.toml`
-
-## Development Notes
-
-- Uses asyncio for asynchronous operations in hub
-- NATS subject format: `prankhub.control.<hub_id>` and `prankhub.status.<hub_id>`
-- Pairing codes are 6-character alphanumeric strings
-- Scripts execute with configurable timeout (default 30s)
-- Activity logging includes timestamps and script names
-- Auto-discovery eliminates manual pairing process
-
-## UV Embedding System (2025)
-
-**Zero-Installation Deployment:**
-- Hub automatically downloads UV binary on first run
-- UV installs Python + dependencies from `pyproject.toml`
-- Python scripts run via embedded UV environment
-- Works on clean VMs with no Python installed
-
-**Deployment Process:**
-1. Deploy hub.exe to target machine
-2. Hub downloads UV (~15MB) automatically
-3. UV installs Python environment (~50MB total)  
-4. Scripts run with all dependencies available
-
-**Directory Structure After Setup:**
-```
-P_Buttons/
-├── hub.exe                # Main hub executable
-├── uv_embedded/           # Auto-created
-│   └── uv.exe            # Downloaded UV binary
-├── .venv/                # Auto-created by UV
-│   └── ...               # Python + dependencies
-└── scripts/              # Your prank scripts (.py files)
-```
-
-## Recent Script Additions
-
-**New Prank Scripts (2025-01-28):**
-- `browser_tab_chaos.py` - Opens multiple browser tabs using Selenium
-- `screen_rotation_prank.py` - Rotates screen temporarily (with --reset flag)
-- `cursor_size_prank.py` - Changes cursor size temporarily (with --reset flag)  
-- `youtube_wallpaper_prank.py` - Sets random YouTube thumbnail as wallpaper
-
-**Reset Functionality:**
-```bash
-# Emergency resets if scripts crash mid-execution
-python screen_rotation_prank.py --reset
-python cursor_size_prank.py --reset
-```
-
-**Additional Dependencies:**
-- selenium>=4.0.0 (browser automation)
-- rotate-screen>=1.0.0 (display rotation)
-- Pillow>=9.0.0 (image processing)
-- requests>=2.25.0 (HTTP requests)
+**🚨 REMEMBER: This is real-time messaging system, NOT REST APIs. WebSocket persistent connections for instant response.**

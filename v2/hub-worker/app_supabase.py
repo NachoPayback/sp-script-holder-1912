@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 SP Crew Control V2 - Hub Worker Service
-Pure script execution engine that registers with Message Relay
+Pure script execution engine using Supabase real-time messaging
 """
 
 import json
@@ -11,15 +11,14 @@ import time
 import logging
 import threading
 import subprocess
-import platform
 import socket
 import uuid
+import asyncio
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 
-import requests
-import websocket
+from supabase import create_client, Client
 from flask import Flask, render_template_string, jsonify
 
 # Add project root to path for script imports
@@ -35,25 +34,26 @@ class HubWorker:
         # Hub configuration
         self.hub_id = self.generate_hub_id()
         self.hub_name = f"Hub-{socket.gethostname()}"
-        self.hub_location = self.detect_location()
         
-        # Message Relay configuration
-        self.relay_base_url = "https://sp-script-holder-1912.vercel.app"
-        self.websocket_url = f"ws://localhost:8765/{self.hub_id}"
+        # Supabase configuration
+        self.supabase_url = "https://qcefzjjxnwccjivsbtgb.supabase.co"
+        self.supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjZWZ6amp4bndjY2ppdnNidGdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4MjA4OTIsImV4cCI6MjA2OTM5Njg5Mn0.qAW4A2-RVg114QiAnJF3KMXrySIYu9EKHNrhWgpibS4"
+        self.supabase: Client = create_client(self.supabase_url, self.supabase_key)
         
         # Script management
-        self.scripts_dir = project_root / "scripts"
+        self.scripts_dir = project_root / "legacy" / "scripts"  # Use legacy scripts
         self.available_scripts = self.scan_available_scripts()
         
-        # WebSocket server
-        self.ws_server = None
-        self.connected_clients = set()
+        # Real-time messaging
+        self.channel = None
+        self.realtime_thread = None
         
         # Status tracking
         self.last_heartbeat = None
         self.registration_status = False
         
         self.logger.info(f"Hub Worker initialized: {self.hub_id} ({self.hub_name})")
+        self.logger.info(f"Found {len(self.available_scripts)} scripts")
 
     def setup_logging(self):
         """Setup logging configuration"""
@@ -77,25 +77,6 @@ class HubWorker:
         hostname = socket.gethostname().lower().replace(' ', '-')
         unique_suffix = str(uuid.uuid4())[:8]
         return f"hub-{hostname}-{unique_suffix}"
-
-    def detect_location(self) -> str:
-        """Detect hub location based on system info"""
-        try:
-            # Try to get location from environment or config
-            location = os.environ.get('HUB_LOCATION')
-            if location:
-                return location
-                
-            # Fallback to hostname-based detection
-            hostname = socket.gethostname().lower()
-            if 'arkansas' in hostname or 'ar-' in hostname:
-                return "Arkansas Hub"
-            elif 'jersey' in hostname or 'nj-' in hostname:
-                return "New Jersey Hub"
-            else:
-                return f"{socket.gethostname()} Hub"
-        except Exception:
-            return "Unknown Location"
 
     def scan_available_scripts(self) -> List[Dict[str, Any]]:
         """Scan scripts directory for available scripts"""
@@ -159,58 +140,31 @@ class HubWorker:
         except Exception:
             return f"Script: {script_file.name}"
 
-    def register_with_relay(self) -> bool:
-        """Register this hub with the Message Relay"""
-        registration_data = {
-            "hub_id": self.hub_id,
-            "hub_name": self.hub_name,
-            "hub_location": self.hub_location,
-            "scripts": self.available_scripts,
-            "websocket_url": self.websocket_url,
-            "max_remotes": 6,
-            "latency_ms": 0  # Will be calculated during heartbeat
-        }
-        
+    def register_hub(self):
+        """Register this hub in Supabase"""
         try:
-            response = requests.post(
-                f"{self.relay_base_url}/api/discover-hubs",
-                json=registration_data,
-                timeout=10
-            )
+            # Insert/update hub record
+            hub_data = {
+                "hub_id": self.hub_id,
+                "hub_name": self.hub_name,
+                "status": "online",
+                "scripts": self.available_scripts,
+                "last_heartbeat": datetime.now().isoformat(),
+                "created_at": datetime.now().isoformat()
+            }
             
-            if response.status_code == 200:
+            result = self.supabase.table("hubs").upsert(hub_data, on_conflict="hub_id").execute()
+            
+            if result.data:
                 self.registration_status = True
-                self.logger.info(f"Successfully registered with Message Relay")
+                self.logger.info(f"Successfully registered hub with Supabase")
                 return True
             else:
-                self.logger.error(f"Registration failed: {response.text}")
+                self.logger.error(f"Registration failed: {result}")
                 return False
                 
         except Exception as e:
             self.logger.error(f"Registration error: {e}")
-            return False
-
-    def send_heartbeat(self) -> bool:
-        """Send heartbeat to Message Relay"""
-        try:
-            start_time = time.time()
-            response = requests.put(
-                f"{self.relay_base_url}/api/discover-hubs",
-                params={"hubId": self.hub_id},
-                timeout=5
-            )
-            latency_ms = int((time.time() - start_time) * 1000)
-            
-            if response.status_code == 200:
-                self.last_heartbeat = datetime.now()
-                self.logger.debug(f"Heartbeat sent (latency: {latency_ms}ms)")
-                return True
-            else:
-                self.logger.warning(f"Heartbeat failed: {response.text}")
-                return False
-                
-        except Exception as e:
-            self.logger.error(f"Heartbeat error: {e}")
             return False
 
     def execute_script(self, script_name: str, remote_id: str) -> Dict[str, Any]:
@@ -228,7 +182,9 @@ class HubWorker:
             return {
                 "success": False,
                 "error": f"Script not found: {script_name}",
-                "duration_ms": 0
+                "duration_ms": 0,
+                "hub_id": self.hub_id,
+                "remote_id": remote_id
             }
             
         self.logger.info(f"Executing script '{script_name}' for remote '{remote_id}'")
@@ -258,25 +214,30 @@ class HubWorker:
                 return {
                     "success": False,
                     "error": f"Unsupported script type: {script_info['type']}",
-                    "duration_ms": 0
+                    "duration_ms": 0,
+                    "hub_id": self.hub_id,
+                    "remote_id": remote_id
                 }
             
             duration_ms = int((time.time() - start_time) * 1000)
             
+            execution_result = {
+                "success": result.returncode == 0,
+                "output": result.stdout if result.returncode == 0 else result.stderr,
+                "duration_ms": duration_ms,
+                "hub_id": self.hub_id,
+                "remote_id": remote_id,
+                "script_name": script_name,
+                "timestamp": datetime.now().isoformat()
+            }
+            
             if result.returncode == 0:
                 self.logger.info(f"Script '{script_name}' executed successfully in {duration_ms}ms")
-                return {
-                    "success": True,
-                    "output": result.stdout,
-                    "duration_ms": duration_ms
-                }
             else:
                 self.logger.error(f"Script '{script_name}' failed: {result.stderr}")
-                return {
-                    "success": False,
-                    "error": result.stderr,
-                    "duration_ms": duration_ms
-                }
+                execution_result["error"] = result.stderr
+                
+            return execution_result
                 
         except subprocess.TimeoutExpired:
             duration_ms = int((time.time() - start_time) * 1000)
@@ -284,7 +245,11 @@ class HubWorker:
             return {
                 "success": False,
                 "error": "Script execution timed out (30s limit)",
-                "duration_ms": duration_ms
+                "duration_ms": duration_ms,
+                "hub_id": self.hub_id,
+                "remote_id": remote_id,
+                "script_name": script_name,
+                "timestamp": datetime.now().isoformat()
             }
         except Exception as e:
             duration_ms = int((time.time() - start_time) * 1000)
@@ -292,8 +257,82 @@ class HubWorker:
             return {
                 "success": False,
                 "error": str(e),
-                "duration_ms": duration_ms
+                "duration_ms": duration_ms,
+                "hub_id": self.hub_id,
+                "remote_id": remote_id,
+                "script_name": script_name,
+                "timestamp": datetime.now().isoformat()
             }
+
+    def handle_execute_message(self, payload):
+        """Handle script execution message from real-time channel"""
+        try:
+            data = payload.get('new', {})
+            script_name = data.get('script_name')
+            remote_id = data.get('remote_id')
+            message_id = data.get('id')
+            
+            if not script_name or not remote_id:
+                self.logger.error(f"Invalid execute message: {data}")
+                return
+                
+            self.logger.info(f"Received execute request: {script_name} from {remote_id}")
+            
+            # Execute the script
+            result = self.execute_script(script_name, remote_id)
+            
+            # Send result back through real-time channel
+            response_data = {
+                "type": "script_result",
+                "message_id": message_id,
+                "result": result
+            }
+            
+            # Insert result into results table
+            self.supabase.table("script_results").insert(response_data).execute()
+            
+        except Exception as e:
+            self.logger.error(f"Error handling execute message: {e}")
+
+    def setup_realtime_channel(self):
+        """Setup Supabase real-time channel for listening to commands"""
+        try:
+            # Subscribe to script_commands table for new execution requests
+            self.channel = self.supabase.channel(f"hub-{self.hub_id}")
+            
+            # Listen for new script execution commands
+            self.channel.on("INSERT", "script_commands", self.handle_execute_message)
+            
+            # Subscribe to the channel
+            self.channel.subscribe()
+            
+            self.logger.info(f"Subscribed to real-time channel: hub-{self.hub_id}")
+            
+        except Exception as e:
+            self.logger.error(f"Error setting up real-time channel: {e}")
+
+    def start_heartbeat_thread(self):
+        """Start background heartbeat thread"""
+        def heartbeat_loop():
+            while True:
+                try:
+                    # Update heartbeat in database
+                    self.supabase.table("hubs").update({
+                        "last_heartbeat": datetime.now().isoformat(),
+                        "status": "online"
+                    }).eq("hub_id", self.hub_id).execute()
+                    
+                    self.last_heartbeat = datetime.now()
+                    self.logger.debug("Heartbeat sent")
+                    
+                except Exception as e:
+                    self.logger.error(f"Heartbeat error: {e}")
+                    
+                time.sleep(30)  # Heartbeat every 30 seconds
+                
+        thread = threading.Thread(target=heartbeat_loop, daemon=True)
+        thread.start()
+        self.logger.info("Heartbeat thread started")
 
     def setup_flask_routes(self):
         """Setup Flask web interface routes"""
@@ -303,7 +342,6 @@ class HubWorker:
             return render_template_string(DASHBOARD_TEMPLATE, 
                 hub_id=getattr(self, 'hub_id', 'Initializing...'),
                 hub_name=getattr(self, 'hub_name', 'Loading...'),
-                hub_location=getattr(self, 'hub_location', 'Unknown'),
                 script_count=len(getattr(self, 'available_scripts', [])),
                 registration_status=getattr(self, 'registration_status', False),
                 last_heartbeat=getattr(self, 'last_heartbeat', None)
@@ -315,12 +353,11 @@ class HubWorker:
                 "service": "SP Crew Control V2 Hub Worker",
                 "hub_id": self.hub_id,
                 "hub_name": self.hub_name,
-                "hub_location": self.hub_location,
                 "status": "online",
                 "registration_status": self.registration_status,
                 "available_scripts": len(self.available_scripts),
                 "last_heartbeat": self.last_heartbeat.isoformat() if self.last_heartbeat else None,
-                "websocket_url": self.websocket_url,
+                "messaging": "Supabase Real-time",
                 "timestamp": datetime.now().isoformat()
             })
             
@@ -332,31 +369,15 @@ class HubWorker:
                 "count": len(self.available_scripts)
             })
 
-    def start_heartbeat_thread(self):
-        """Start background heartbeat thread"""
-        def heartbeat_loop():
-            while True:
-                if self.registration_status:
-                    if not self.send_heartbeat():
-                        # Re-register if heartbeat fails
-                        self.logger.warning("Heartbeat failed, attempting re-registration")
-                        self.register_with_relay()
-                else:
-                    # Try to register if not registered
-                    self.register_with_relay()
-                    
-                time.sleep(30)  # Heartbeat every 30 seconds
-                
-        thread = threading.Thread(target=heartbeat_loop, daemon=True)
-        thread.start()
-        self.logger.info("Heartbeat thread started")
-
     def run(self, host='0.0.0.0', port=5002, debug=False):
         """Start the Hub Worker service"""
         self.logger.info(f"Starting Hub Worker on {host}:{port}")
         
-        # Initial registration
-        self.register_with_relay()
+        # Register with Supabase
+        self.register_hub()
+        
+        # Setup real-time messaging
+        self.setup_realtime_channel()
         
         # Start heartbeat thread
         self.start_heartbeat_thread()
@@ -458,7 +479,7 @@ DASHBOARD_TEMPLATE = """
     <div class="container">
         <div class="header">
             <h1 class="title">🛡️ CREW CONTROL</h1>
-            <p class="subtitle">Hub Worker Service - Monitoring Only</p>
+            <p class="subtitle">Hub Worker - Supabase Real-time</p>
         </div>
         
         <div class="status-grid">
@@ -466,7 +487,7 @@ DASHBOARD_TEMPLATE = """
                 <h3>Hub Information</h3>
                 <div class="status-value">ID: {{ hub_id }}</div>
                 <div class="status-value">Name: {{ hub_name }}</div>
-                <div class="status-value">Location: {{ hub_location }}</div>
+                <div class="status-value">Scripts: {{ script_count }}</div>
             </div>
             
             <div class="status-card">
@@ -474,7 +495,7 @@ DASHBOARD_TEMPLATE = """
                 <div class="status-value status-{% if registration_status %}online{% else %}offline{% endif %}">
                     Registration: {% if registration_status %}Connected{% else %}Disconnected{% endif %}
                 </div>
-                <div class="status-value">Scripts Available: {{ script_count }}</div>
+                <div class="status-value">Messaging: Supabase Real-time</div>
                 <div class="status-value">
                     Last Heartbeat: {% if last_heartbeat %}{{ last_heartbeat.strftime('%H:%M:%S') }}{% else %}Never{% endif %}
                 </div>
@@ -483,15 +504,15 @@ DASHBOARD_TEMPLATE = """
         
         <div class="info-section">
             <h3>About This Hub Worker</h3>
-            <p>This is a monitoring-only interface for the Hub Worker service. The hub automatically:</p>
+            <p>This hub automatically executes scripts when requested through Supabase real-time messaging:</p>
             <ul style="margin-left: 20px; margin-top: 10px;">
-                <li>Registers with the Message Relay service</li>
-                <li>Sends regular heartbeats to maintain connection</li>
-                <li>Executes scripts when requested by Remote Controllers</li>
-                <li>Reports execution results back to the relay</li>
+                <li>Listens for script execution commands via Supabase real-time channels</li>
+                <li>Executes Python and PowerShell scripts with 30-second timeout</li>
+                <li>Reports execution results back through real-time messaging</li>
+                <li>Sends regular heartbeats to maintain online status</li>
             </ul>
             <br>
-            <p><strong>Note:</strong> Remote control is handled through the Message Relay system. This hub cannot be controlled directly from this interface.</p>
+            <p><strong>Real-time Messaging:</strong> Instant button press → script execution globally</p>
         </div>
         
         <div style="text-align: center; margin-top: 30px;">
