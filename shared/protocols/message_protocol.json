@@ -1,0 +1,238 @@
+{
+  "protocol_version": "2.0.0",
+  "description": "SP Crew Control V2 Message Protocol - Complete specification for communication between Remote Controllers, Message Relay, and Hub Workers",
+  
+  "message_types": {
+    "hub_registration": {
+      "direction": "hub → relay",
+      "description": "Hub announces itself to the message relay",
+      "format": {
+        "type": "hub_registration",
+        "hub_id": "string (unique identifier)",
+        "hub_name": "string (display name)",
+        "hub_location": "string (optional description)",
+        "scripts": ["array of available script objects"],
+        "max_remotes": "number (capacity limit)",
+        "websocket_url": "string (hub's WebSocket endpoint)"
+      },
+      "example": {
+        "type": "hub_registration",
+        "hub_id": "hub_arkansas_001",
+        "hub_name": "Arkansas Command Center",
+        "hub_location": "Little Rock, AR",
+        "scripts": [
+          {"name": "move_mouse.py", "display_name": "Move Mouse", "category": "cursor"},
+          {"name": "play_sound.py", "display_name": "Play Sound", "category": "audio"}
+        ],
+        "max_remotes": 6,
+        "websocket_url": "ws://192.168.1.100:5001"
+      }
+    },
+    
+    "hub_discovery_request": {
+      "direction": "remote → relay",
+      "description": "Remote requests list of available hubs",
+      "format": {
+        "type": "hub_discovery_request",
+        "remote_id": "string (unique identifier)",
+        "remote_name": "string (optional username)"
+      }
+    },
+    
+    "hub_discovery_response": {
+      "direction": "relay → remote",
+      "description": "Relay responds with available hubs",
+      "format": {
+        "type": "hub_discovery_response",
+        "hubs": ["array of hub objects"],
+        "timestamp": "ISO string"
+      },
+      "example": {
+        "type": "hub_discovery_response",
+        "hubs": [
+          {
+            "hub_id": "hub_arkansas_001",
+            "hub_name": "Arkansas Command Center",
+            "hub_location": "Little Rock, AR",
+            "script_count": 13,
+            "connected_remotes": 2,
+            "max_remotes": 6,
+            "latency_ms": 45
+          },
+          {
+            "hub_id": "hub_newjersey_001", 
+            "hub_name": "Jersey Operations",
+            "hub_location": "Newark, NJ",
+            "script_count": 15,
+            "connected_remotes": 1,
+            "max_remotes": 6,
+            "latency_ms": 78
+          }
+        ],
+        "timestamp": "2025-07-29T11:30:00.000Z"
+      }
+    },
+    
+    "session_join_request": {
+      "direction": "remote → relay",
+      "description": "Remote requests to join a specific hub session",
+      "format": {
+        "type": "session_join_request",
+        "remote_id": "string",
+        "remote_name": "string (optional username)",
+        "hub_id": "string (chosen hub)",
+        "requested_mode": "single_button | all_buttons (initial preference)"
+      }
+    },
+    
+    "session_join_response": {
+      "direction": "relay → remote",
+      "description": "Relay confirms session joining",
+      "format": {
+        "type": "session_join_response",
+        "success": "boolean",
+        "session_id": "string (unique session identifier)",
+        "current_mode": "single_button | all_buttons",
+        "assigned_script": "string (if single_button mode)",
+        "available_scripts": ["array (if all_buttons mode)"],
+        "websocket_url": "string (for direct hub communication)",
+        "message": "string (error message if failed)"
+      }
+    },
+    
+    "mode_change_request": {
+      "direction": "remote → relay",
+      "description": "Remote requests mode change for entire session",
+      "format": {
+        "type": "mode_change_request",
+        "session_id": "string",
+        "remote_id": "string (requester)",
+        "new_mode": "single_button | all_buttons",
+        "reason": "string (optional)"
+      }
+    },
+    
+    "mode_change_broadcast": {
+      "direction": "relay → all_remotes_in_session",
+      "description": "Relay broadcasts mode change to all session participants",
+      "format": {
+        "type": "mode_change_broadcast",
+        "session_id": "string",
+        "new_mode": "single_button | all_buttons",
+        "initiated_by": "string (remote_id)",
+        "transition_id": "string (for coordinating UI updates)"
+      }
+    },
+    
+    "mode_transition_ready": {
+      "direction": "remote → relay",
+      "description": "Remote confirms it's ready for mode transition",
+      "format": {
+        "type": "mode_transition_ready",
+        "session_id": "string",
+        "remote_id": "string",
+        "transition_id": "string"
+      }
+    },
+    
+    "mode_transition_complete": {
+      "direction": "relay → all_remotes_in_session", 
+      "description": "Relay signals all remotes to complete transition",
+      "format": {
+        "type": "mode_transition_complete",
+        "session_id": "string",
+        "transition_id": "string",
+        "new_assignments": "object (script assignments if single_button)"
+      }
+    },
+    
+    "script_execution_request": {
+      "direction": "remote → hub (via relay)",
+      "description": "Remote requests script execution",
+      "format": {
+        "type": "script_execution_request",
+        "session_id": "string",
+        "remote_id": "string",
+        "remote_name": "string",
+        "script_name": "string",
+        "timestamp": "ISO string"
+      }
+    },
+    
+    "script_execution_response": {
+      "direction": "hub → remote (via relay)",
+      "description": "Hub responds with execution result",
+      "format": {
+        "type": "script_execution_response",
+        "success": "boolean",
+        "script_name": "string",
+        "duration_ms": "number",
+        "message": "string (success/error details)",
+        "timestamp": "ISO string"
+      }
+    },
+    
+    "activity_log_broadcast": {
+      "direction": "relay → all_session_participants",
+      "description": "Broadcast activity to all session participants",
+      "format": {
+        "type": "activity_log_broadcast",
+        "session_id": "string",
+        "activity": {
+          "timestamp": "ISO string",
+          "remote_id": "string",
+          "remote_name": "string",
+          "action": "script_executed | mode_changed | joined_session | left_session",
+          "details": "string (script name, etc.)",
+          "success": "boolean (for script execution)"
+        }
+      }
+    },
+    
+    "session_status_request": {
+      "direction": "remote/hub → relay",
+      "description": "Request current session status",
+      "format": {
+        "type": "session_status_request",
+        "session_id": "string",
+        "requester_id": "string"
+      }
+    },
+    
+    "session_status_response": {
+      "direction": "relay → requester",
+      "description": "Current session status information",
+      "format": {
+        "type": "session_status_response",
+        "session_id": "string",
+        "current_mode": "single_button | all_buttons",
+        "connected_remotes": ["array of remote objects"],
+        "hub_info": "object (hub details)",
+        "recent_activity": ["array of recent activity objects"]
+      }
+    }
+  },
+  
+  "error_handling": {
+    "connection_lost": {
+      "description": "Handle connection failures gracefully",
+      "retry_logic": "Exponential backoff: 1s, 2s, 4s, 8s, then manual reconnect",
+      "user_feedback": "Show connection status, allow manual retry"
+    },
+    "hub_unavailable": {
+      "description": "Chosen hub becomes unavailable",
+      "fallback": "Return to hub discovery, show error message"
+    },
+    "mode_transition_failure": {
+      "description": "Mode change fails or times out",
+      "rollback": "Revert to previous mode, notify user"
+    }
+  },
+  
+  "security": {
+    "authentication": "Session-based tokens, no permanent credentials",
+    "validation": "All messages validated against schema",
+    "rate_limiting": "Per-remote script execution limits",
+    "sanitization": "All user inputs sanitized before processing"
+  }
+}

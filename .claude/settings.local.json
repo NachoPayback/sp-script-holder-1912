@@ -57,7 +57,15 @@
       "Bash(start cmd /k \"uv run python src/remote/remote_app.py\")",
       "Bash(.disthub.exe)",
       "Bash(./dist/hub.exe)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(find:*)",
+      "Bash(npm cache clean:*)",
+      "Bash(npx vercel:*)",
+      "Bash(vercel:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm install:*)",
+      "Bash(where claude)",
+      "Bash(tree:*)"
     ],
     "deny": []
   }
