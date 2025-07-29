@@ -1,6 +1,8 @@
 # Build artifacts
 build/
 dist/
+dist_hub/
+dist_remote/
 *.spec
 *.exe
 
@@ -40,8 +42,12 @@ Thumbs.db
 # PyInstaller
 *.manifest
 
-# UV lock file (keep pyproject.toml but ignore lock)
+# UV and cache files
 uv.lock
+uv_embedded/
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
 
 # Temporary files
 *.tmp
