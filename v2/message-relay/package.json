@@ -11,9 +11,7 @@
   },
   "devDependencies": {},
   "scripts": {
-    "dev": "vercel dev",
-    "build": "echo 'Build complete'",
-    "deploy": "vercel --prod"
+    "dev": "vercel dev"
   },
   "keywords": [
     "crew-control",
