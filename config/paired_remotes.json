@@ -1,0 +1,18 @@
+{
+  "Remote-3E651FF9": {
+    "remote_id": "Remote-3E651FF9",
+    "hub_token": "HUB-0387E161",
+    "assigned_command": "rotate_screen.py",
+    "paired_at": "2025-07-24T17:17:05.796631",
+    "last_seen": "2025-07-25T11:31:20.715120",
+    "username": "Nacho"
+  },
+  "Remote-24310932": {
+    "remote_id": "Remote-24310932",
+    "hub_token": "HUB-0387E161",
+    "assigned_command": "fake_system_message.py",
+    "paired_at": "2025-07-29T09:03:49.285891",
+    "last_seen": "2025-07-29T09:03:49.285896",
+    "username": ""
+  }
+}

@@ -1,0 +1,122 @@
+2025-07-28 10:24:40,282 - INFO - Hub starting...
+2025-07-28 10:24:40,282 - INFO - Loaded config/config.json
+2025-07-28 10:24:40,287 - INFO - Loaded config/paired_remotes.json
+2025-07-28 10:24:40,290 - INFO - Loaded config/hub_token.json
+2025-07-28 10:24:40,294 - INFO - Found script dependencies: rotatescreen, selenium, pyautogui, winreg, win32com, requests
+2025-07-28 10:24:40,548 - ERROR - Dependency installation failed: Using Python 3.13.3 environment at: C:\Users\Valued Customer\AppData\Local\Programs\Python\Python313
+warning: Ignoring dangling temporary directory: `C:\Users\Valued Customer\AppData\Local\Programs\Python\Python313\Lib\site-packages\~dm-2.23.1.dist-info`
+warning: Ignoring dangling temporary directory: `C:\Users\Valued Customer\AppData\Local\Programs\Python\Python313\Lib\site-packages\~dm-2.24.1.dist-info`
+  × No solution found when resolving dependencies:
+  ╰─▶ Because rotatescreen was not found in the package registry and you
+      require rotatescreen, we can conclude that your requirements are
+      unsatisfiable.
+
+2025-07-28 10:24:40,553 - INFO - Loaded 12 scripts
+2025-07-28 10:24:40,554 - INFO - Setting up UV environment...
+2025-07-28 10:24:40,554 - INFO - UV not found, downloading...
+2025-07-28 10:24:40,554 - INFO - Downloading UV from https://github.com/astral-sh/uv/releases/latest/download/uv-x86_64-pc-windows-msvc.zip
+2025-07-28 10:24:43,778 - INFO - UV successfully downloaded and setup
+2025-07-28 10:24:44,093 - INFO - Installing Python environment...
+2025-07-28 10:24:47,734 - ERROR - Failed to setup Python environment: warning: No `requires-python` value found in the workspace. Defaulting to `>=3.13`.
+  × No solution found when resolving dependencies:
+  ╰─▶ Because only rotate-screen<=0.1.5 is available and your project
+      depends on rotate-screen>=1.0.0, we can conclude that your project's
+      requirements are unsatisfiable.
+
+2025-07-28 10:24:47,734 - ERROR - Failed to setup Python environment - scripts may not work
+2025-07-28 10:24:47,734 - INFO - Connecting to NATS: nats://demo.nats.io:4222
+2025-07-28 10:24:47,849 - INFO - Hotkey registered: Ctrl+Alt+S+P
+2025-07-28 10:24:47,850 - INFO - Hub NACHOPC (HUB-0387E161) running with 12 scripts
+2025-07-28 10:25:54,946 - INFO - Hub starting...
+2025-07-28 10:25:54,946 - INFO - Loaded config/config.json
+2025-07-28 10:25:54,946 - INFO - Loaded config/paired_remotes.json
+2025-07-28 10:25:54,946 - INFO - Loaded config/hub_token.json
+2025-07-28 10:25:54,951 - INFO - Found script dependencies: pyautogui, win32com, requests, rotatescreen, selenium, winreg
+2025-07-28 10:25:55,177 - ERROR - Dependency installation failed: Using Python 3.13.3 environment at: C:\Users\Valued Customer\AppData\Local\Programs\Python\Python313
+warning: Ignoring dangling temporary directory: `C:\Users\Valued Customer\AppData\Local\Programs\Python\Python313\Lib\site-packages\~dm-2.23.1.dist-info`
+warning: Ignoring dangling temporary directory: `C:\Users\Valued Customer\AppData\Local\Programs\Python\Python313\Lib\site-packages\~dm-2.24.1.dist-info`
+  × No solution found when resolving dependencies:
+  ╰─▶ Because rotatescreen was not found in the package registry and you
+      require rotatescreen, we can conclude that your requirements are
+      unsatisfiable.
+
+2025-07-28 10:25:55,178 - INFO - Loaded 12 scripts
+2025-07-28 10:25:55,179 - INFO - Setting up UV environment...
+2025-07-28 10:25:55,179 - INFO - UV not found, downloading...
+2025-07-28 10:25:55,179 - INFO - Downloading UV from https://github.com/astral-sh/uv/releases/latest/download/uv-x86_64-pc-windows-msvc.zip
+2025-07-28 10:25:58,040 - INFO - UV successfully downloaded and setup
+2025-07-28 10:25:58,250 - INFO - Installing Python environment...
+2025-07-28 10:25:58,327 - ERROR - Failed to setup Python environment: warning: No `requires-python` value found in the workspace. Defaulting to `>=3.13`.
+  × No solution found when resolving dependencies:
+  ╰─▶ Because rotatescreen was not found in the package registry and your
+      project depends on rotatescreen>=0.1.5, we can conclude that your
+      project's requirements are unsatisfiable.
+
+2025-07-28 10:25:58,327 - ERROR - Failed to setup Python environment - scripts may not work
+2025-07-28 10:25:58,327 - INFO - Connecting to NATS: nats://demo.nats.io:4222
+2025-07-28 10:25:58,426 - INFO - Hotkey registered: Ctrl+Alt+S+P
+2025-07-28 10:25:58,426 - INFO - Hub NACHOPC (HUB-0387E161) running with 12 scripts
+2025-07-28 10:30:33,513 - INFO - Hub starting...
+2025-07-28 10:30:33,513 - INFO - Loaded config/config.json
+2025-07-28 10:30:33,513 - INFO - Loaded config/paired_remotes.json
+2025-07-28 10:30:33,513 - INFO - Loaded config/hub_token.json
+2025-07-28 10:30:33,514 - INFO - Git repository loaded
+2025-07-28 10:30:33,518 - INFO - Found script dependencies: winreg, selenium, rotatescreen, win32com, pyautogui, requests
+2025-07-28 10:30:33,544 - ERROR - Dependency installation failed: E:\CodeTests\P_Buttons\.venv\Scripts\python.exe: No module named uv
+
+2025-07-28 10:30:33,545 - INFO - Loaded 12 scripts
+2025-07-28 10:30:33,546 - INFO - Setting up UV environment...
+2025-07-28 10:30:33,546 - INFO - UV already available
+2025-07-28 10:30:33,564 - INFO - Python environment ready
+2025-07-28 10:30:33,564 - INFO - UV environment ready
+2025-07-28 10:30:33,564 - INFO - Connecting to NATS: nats://demo.nats.io:4222
+2025-07-28 10:30:33,673 - INFO - Hotkey registered: Ctrl+Alt+S+P
+2025-07-28 10:30:33,673 - INFO - Hub NACHOPC (HUB-0387E161) running with 12 scripts
+2025-07-28 10:36:50,273 - INFO - Hub starting...
+2025-07-28 10:36:50,273 - INFO - Loaded config/config.json
+2025-07-28 10:36:50,273 - INFO - Loaded config/paired_remotes.json
+2025-07-28 10:36:50,273 - INFO - Loaded config/hub_token.json
+2025-07-28 10:36:50,274 - INFO - Git repository loaded
+2025-07-28 10:36:50,278 - INFO - Found script dependencies: selenium, win32com, pyautogui, winreg, requests, rotatescreen
+2025-07-28 10:36:50,304 - ERROR - Dependency installation failed: E:\CodeTests\P_Buttons\.venv\Scripts\python.exe: No module named uv
+
+2025-07-28 10:36:50,305 - INFO - Loaded 12 scripts
+2025-07-28 10:36:50,305 - INFO - Setting up UV environment...
+2025-07-28 10:36:50,306 - INFO - UV already available
+2025-07-28 10:36:50,322 - INFO - Python environment ready
+2025-07-28 10:36:50,322 - INFO - UV environment ready
+2025-07-28 10:36:50,322 - INFO - Connecting to NATS: nats://demo.nats.io:4222
+2025-07-28 10:36:50,451 - INFO - Hotkey registered: Ctrl+Alt+S+P
+2025-07-28 10:36:50,451 - INFO - Hub NACHOPC (HUB-0387E161) running with 12 scripts
+2025-07-28 10:38:15,402 - INFO - Hub starting...
+2025-07-28 10:38:15,402 - INFO - Loaded config/config.json
+2025-07-28 10:38:15,402 - INFO - Loaded config/paired_remotes.json
+2025-07-28 10:38:15,402 - INFO - Loaded config/hub_token.json
+2025-07-28 10:38:15,403 - INFO - Git repository loaded
+2025-07-28 10:38:15,408 - INFO - Found script dependencies: rotatescreen, selenium, win32com, requests, pyautogui, winreg
+2025-07-28 10:38:15,435 - ERROR - Dependency installation failed: E:\CodeTests\P_Buttons\.venv\Scripts\python.exe: No module named uv
+
+2025-07-28 10:38:15,436 - INFO - Loaded 14 scripts
+2025-07-28 10:38:15,436 - INFO - Setting up UV environment...
+2025-07-28 10:38:15,437 - INFO - UV already available
+2025-07-28 10:38:15,453 - INFO - Python environment ready
+2025-07-28 10:38:15,454 - INFO - UV environment ready
+2025-07-28 10:38:15,454 - INFO - Connecting to NATS: nats://demo.nats.io:4222
+2025-07-28 10:38:15,557 - INFO - Hotkey registered: Ctrl+Alt+S+P
+2025-07-28 10:38:15,558 - INFO - Hub NACHOPC (HUB-0387E161) running with 14 scripts
+2025-07-28 10:38:28,157 - INFO - Hub starting...
+2025-07-28 10:38:28,157 - INFO - Loaded config/config.json
+2025-07-28 10:38:28,157 - INFO - Loaded config/paired_remotes.json
+2025-07-28 10:38:28,157 - INFO - Loaded config/hub_token.json
+2025-07-28 10:38:28,158 - INFO - Git repository loaded
+2025-07-28 10:38:28,163 - INFO - Found script dependencies: rotatescreen, win32com, pyautogui, selenium, winreg, requests
+2025-07-28 10:38:28,187 - ERROR - Dependency installation failed: E:\CodeTests\P_Buttons\.venv\Scripts\python.exe: No module named uv
+
+2025-07-28 10:38:28,188 - INFO - Loaded 14 scripts
+2025-07-28 10:38:28,189 - INFO - Setting up UV environment...
+2025-07-28 10:38:28,189 - INFO - UV already available
+2025-07-28 10:38:28,205 - INFO - Python environment ready
+2025-07-28 10:38:28,205 - INFO - UV environment ready
+2025-07-28 10:38:28,205 - INFO - Connecting to NATS: nats://demo.nats.io:4222
+2025-07-28 10:38:28,307 - INFO - Hotkey registered: Ctrl+Alt+S+P
+2025-07-28 10:38:28,307 - INFO - Hub NACHOPC (HUB-0387E161) running with 14 scripts
