@@ -537,6 +537,21 @@
         .refresh-btn:active {
             transform: translateY(0);
         }
+        
+        .refresh-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        
+        .refresh-btn.loading #refreshIcon {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
 
         /* Hide sidebar on small screens */
         @media (max-width: 1024px) {
@@ -557,8 +572,8 @@
             <!-- Hub List -->
             <div id="hubListContainer">
                 <div class="hub-list-header">
-                    <button class="refresh-btn" onclick="discoverHubs()" title="Refresh hub list">
-                        🔄 REFRESH
+                    <button class="refresh-btn" id="refreshBtn" onclick="refreshHubs()" title="Refresh hub list">
+                        <span id="refreshIcon">🔄</span> <span id="refreshText">REFRESH</span>
                     </button>
                 </div>
                 <div id="hubList" class="hub-grid"></div>
@@ -635,18 +650,47 @@
         // Discover hubs on load
         discoverHubs();
         
-        async function discoverHubs() {
+        async function refreshHubs() {
+            const refreshBtn = document.getElementById('refreshBtn');
+            const refreshIcon = document.getElementById('refreshIcon');
+            const refreshText = document.getElementById('refreshText');
+            
+            // Set loading state
+            refreshBtn.disabled = true;
+            refreshBtn.classList.add('loading');
+            refreshText.textContent = 'SEARCHING...';
+            
             try {
-                const response = await fetch('/api/hubs');
-                const data = await response.json();
-                
-                const hubList = document.getElementById('hubList');
-                hubList.innerHTML = '';
-                
-                if (!data.hubs || data.hubs.length === 0) {
-                    hubList.innerHTML = '<div class="loading">No active hubs found</div>';
-                    return;
-                }
+                await discoverHubs();
+                showToast('Hub list refreshed');
+            } catch (error) {
+                showToast('Failed to refresh hub list');
+                console.error('Refresh error:', error);
+            } finally {
+                // Reset button state
+                refreshBtn.disabled = false;
+                refreshBtn.classList.remove('loading');
+                refreshText.textContent = 'REFRESH';
+            }
+        }
+        
+        async function discoverHubs() {
+            const hubList = document.getElementById('hubList');
+            
+            // Show loading state in hub list
+            if (hubList.children.length === 0) {
+                hubList.innerHTML = '<div class="loading">Searching for hubs...</div>';
+            }
+            
+            const response = await fetch('/api/hubs');
+            const data = await response.json();
+            
+            hubList.innerHTML = '';
+            
+            if (!data.hubs || data.hubs.length === 0) {
+                hubList.innerHTML = '<div class="loading">No active hubs found</div>';
+                return;
+            }
                 
                 data.hubs.forEach(hub => {
                     const hubCard = document.createElement('div');
@@ -1038,10 +1082,10 @@
             discoverHubs();
         }
         
-        // Auto-refresh
+        // Auto-refresh (silent)
         setInterval(() => {
             if (!connectedHub) {
-                discoverHubs();
+                discoverHubs(); // Silent refresh
             } else {
                 updateConnectedUsers();
             }
