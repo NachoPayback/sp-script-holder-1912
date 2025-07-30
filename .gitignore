@@ -55,3 +55,12 @@ uv_embedded/
 *.bak
 *.backup
 .vercel
+
+# Legacy code - no longer needed
+legacy/
+
+# Test files
+test_*.py
+test_*.js
+node_modules/
+package-lock.json
