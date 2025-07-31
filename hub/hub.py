@@ -23,9 +23,18 @@ from typing import Any, Dict, List, Optional
 
 from supabase import Client, create_client
 from supabase._async.client import create_client as create_async_client
+import git
+
+from rich.console import Console
+from rich.logging import RichHandler
+from rich.panel import Panel
+from rich.text import Text
+from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.table import Table
+from rich import box
 
 # Add project root to path for script imports
-project_root = Path(__file__).parent.parent.parent
+project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 class HubWorker:
@@ -38,7 +47,7 @@ class HubWorker:
         self.friendly_name = f"Hub-{socket.gethostname()}"
 
         # Load Supabase configuration
-        config_path = Path(__file__).parent.parent / "config" / "supabase.json"
+        config_path = Path(__file__).parent / "config" / "supabase.json"
         with open(config_path, 'r') as f:
             supabase_config = json.load(f)
 
@@ -63,7 +72,17 @@ class HubWorker:
         self.running = True
         self.shutdown_requested = False
 
-        self.logger.info(f"Hub Worker initialized [ID: {self.machine_id}] - Found {len(self.available_scripts)} scripts")
+        # Rich startup banner
+        startup_panel = Panel.fit(
+            f"[bold blue]SP CREW CONTROL V2 - HUB WORKER[/bold blue]\n"
+            f"[dim]Pure script execution engine using Supabase real-time messaging[/dim]\n\n"
+            f"[green]✓[/green] Machine ID: [cyan]{self.machine_id}[/cyan]\n"
+            f"[green]✓[/green] Scripts Found: [yellow]{len(self.available_scripts)}[/yellow]\n"
+            f"[green]✓[/green] Dependencies Ready: [yellow]{sum(1 for ready in self.script_dependencies_ready.values() if ready)}[/yellow]",
+            title="[bold green]INITIALIZATION COMPLETE[/bold green]",
+            border_style="green"
+        )
+        self.console.print(startup_panel)
 
     def install_script_dependencies(self, script_dir: Path) -> bool:
         """Install dependencies for a script using UV from pyproject.toml or inline script deps"""
@@ -101,11 +120,11 @@ class HubWorker:
                     site_packages = venv_path / "lib" / "python"  # Unix-like fallback
                 
                 if site_packages.exists() and any(site_packages.iterdir()):
-                    self.logger.info(f"[DEPS] Dependencies already installed for {script_name}")
+                    self.logger.info(f"[bright_green]✓[/bright_green] [bold]Dependencies already installed[/bold] for [cyan]{script_name}[/cyan]", extra={"markup": True})
                     self.script_dependencies_ready[script_name] = True
                     return True
             
-            self.logger.info(f"[DEPS] Installing dependencies for {script_name}...")
+            self.logger.info(f"[yellow]⚙[/yellow] [bold]Installing dependencies[/bold] for [cyan]{script_name}[/cyan]...", extra={"markup": True})
             
             if pyproject_path.exists():
                 # Initialize UV project if needed and install dependencies
@@ -136,11 +155,11 @@ class HubWorker:
                 )
             
             if result.returncode == 0:
-                self.logger.info(f"[DEPS] ✓ Dependencies ready for {script_name}")
+                self.logger.info(f"[bright_green]✓[/bright_green] [bold]Dependencies ready[/bold] for [cyan]{script_name}[/cyan]", extra={"markup": True})
                 self.script_dependencies_ready[script_name] = True
                 return True
             else:
-                self.logger.error(f"[DEPS] ✗ Failed to install dependencies for {script_name}:")
+                self.logger.error(f"[bright_red]✗[/bright_red] [bold]Failed to install dependencies[/bold] for [cyan]{script_name}[/cyan]:", extra={"markup": True})
                 self.logger.error(f"[DEPS]   {result.stderr.strip()}")
                 self.script_dependencies_ready[script_name] = False
                 return False
@@ -155,66 +174,68 @@ class HubWorker:
             return False
 
     def pull_latest_scripts(self):
-        """Pull latest scripts from git repository (scripts directory only)"""
+        """Pull latest scripts from git repository using GitPython (scripts directory only)"""
         try:
             self.logger.debug("Pulling latest scripts from repository...")
             
-            # Use sparse checkout to only pull scripts directory
-            # First, ensure sparse checkout is enabled
-            subprocess.run(
-                ["git", "config", "core.sparseCheckout", "true"],
-                cwd=project_root,
-                capture_output=True,
-                timeout=10
-            )
+            # Open the git repository
+            repo = git.Repo(project_root)
             
-            # Set sparse checkout to include scripts directory (includes all subdirs and pyproject.toml files)
+            # Enable sparse checkout if not already enabled
+            with repo.config_writer() as config:
+                config.set_value("core", "sparseCheckout", "true")
+            
+            # Set sparse checkout to include only scripts directory
             sparse_checkout_file = project_root / ".git" / "info" / "sparse-checkout"
             with open(sparse_checkout_file, 'w') as f:
                 f.write("scripts/\n")  # Includes all script files, subdirectories, and pyproject.toml files
             
-            # Pull only the scripts directory
-            result = subprocess.run(
-                ["git", "pull", "origin", "master"],
-                cwd=project_root,
-                capture_output=True,
-                text=True,
-                timeout=30
-            )
+            # Pull latest changes from origin/master
+            origin = repo.remotes.origin
+            origin.pull('master')
             
-            if result.returncode == 0:
-                self.logger.debug("Successfully pulled latest scripts")
-            else:
-                self.logger.warning(f"Git pull failed: {result.stderr}")
+            self.logger.debug("Successfully pulled latest scripts using GitPython")
                 
         except Exception as e:
             self.logger.error(f"Error pulling latest scripts: {e}")
 
     def setup_logging(self):
-        """Setup logging configuration with reduced verbosity"""
+        """Setup Rich logging with beautiful colors and formatting"""
         log_dir = Path("logs")
         log_dir.mkdir(exist_ok=True)
 
         log_file = log_dir / f"hub_worker_{datetime.now().strftime('%Y%m%d')}.log"
-
+        
+        # Create Rich console
+        self.console = Console()
+        
+        # Configure Rich logging
+        rich_handler = RichHandler(
+            console=self.console,
+            show_time=True,
+            show_path=False,
+            rich_tracebacks=True,
+            tracebacks_show_locals=True
+        )
+        
+        # Create file handler with proper formatter
+        file_handler = logging.FileHandler(log_file, encoding='utf-8')
+        file_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        file_handler.setFormatter(file_formatter)
+        
         # Configure root logger
         logging.basicConfig(
             level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s',  # Simplified format
+            format='%(message)s',  # Rich handles the formatting
             handlers=[
-                logging.FileHandler(log_file, encoding='utf-8'),
-                logging.StreamHandler(sys.stdout)
+                file_handler,
+                rich_handler
             ]
         )
         
-        # Configure stdout to handle Unicode on Windows
-        if sys.stdout.encoding != 'utf-8':
-            import codecs
-            sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'replace')
-        
         # Reduce verbosity of noisy libraries
-        logging.getLogger('httpx').setLevel(logging.WARNING)  # Only show HTTP errors
-        logging.getLogger('realtime._async.client').setLevel(logging.WARNING)  # Only show WebSocket errors
+        logging.getLogger('httpx').setLevel(logging.WARNING)
+        logging.getLogger('realtime._async.client').setLevel(logging.WARNING)
         logging.getLogger('supabase').setLevel(logging.WARNING)
         
         self.logger = logging.getLogger('HubWorker')
@@ -226,25 +247,9 @@ class HubWorker:
         return hashlib.sha256(machine_info.encode()).hexdigest()[:16]
 
     def get_friendly_name(self, script_name: str) -> str:
-        """Convert script folder name to friendly display name"""
-        # Custom mappings for better display names
-        friendly_names = {
-            'taco_bell_bong': '🌮 Taco Bell Bong',
-            'minimize_windows': '🪟 Minimize All Windows',
-            'screen_rotation_prank': '🔄 Screen Rotation Prank',
-            'youtube_wallpaper_prank': '🎥 YouTube Wallpaper Prank',
-            'browser_tab_chaos': '🌐 Browser Tab Chaos',
-            'move_mouse': '🖱️ Mouse Mover',
-            'change_desktop_icons': '🖼️ Desktop Icon Shuffle',
-            'fake_error_message': '⚠️ Fake Error Message',
-            'disco_lights': '🕺 Disco Lights',
-            'rickroll_popup': '🎵 Rickroll Popup',
-            'typing_simulator': '⌨️ Ghost Typing',
-            'upside_down_screen': '🙃 Upside Down Screen'
-        }
-        
-        # Return custom name if available, otherwise use default conversion
-        return friendly_names.get(script_name, script_name.replace('_', ' ').title())
+        """Convert script folder name to friendly display name systematically"""
+        # Systematic conversion: replace underscores with spaces and title case
+        return script_name.replace('_', ' ').title()
 
     def discover_scripts(self) -> List[str]:
         """Scan scripts directory for available scripts in subdirectories"""
@@ -277,7 +282,7 @@ class HubWorker:
             self.logger.warning(f"[DISCOVERY] These scripts may fail at runtime!")
         
         ready_count = sum(1 for ready in self.script_dependencies_ready.values() if ready)
-        self.logger.info(f"[DISCOVERY] Found {len(scripts)} scripts, {ready_count} with dependencies ready")
+        self.logger.info(f"[bright_yellow]🔍[/bright_yellow] [bold]Script Discovery Complete[/bold] - Found [yellow]{len(scripts)}[/yellow] scripts, [green]{ready_count}[/green] with dependencies ready", extra={"markup": True})
 
         return scripts
 
@@ -303,7 +308,7 @@ class HubWorker:
             ).execute()
 
             self.hub_id = result.data[0]['id']
-            self.logger.info(f"[OK] Hub registered successfully [Hub ID: {self.hub_id}]")
+            self.logger.info(f"[bright_green]✓[/bright_green] [bold]Hub registered successfully[/bold] [dim]\\[Hub ID: [cyan]{self.hub_id}[/cyan]\\][/dim]", extra={"markup": True})
 
             # Update hub_scripts table
             self.update_hub_scripts()
@@ -410,8 +415,9 @@ class HubWorker:
         except Exception as e:
             self.logger.error(f"Error updating hub scripts: {e}")
 
-    def execute_script(self, script_name: str, remote_id: str) -> Dict[str, Any]:
-        """Execute a script and return results"""
+
+    async def execute_script_async_direct(self, script_name: str, remote_id: str) -> Dict[str, Any]:
+        """Execute a script using async subprocess (no thread pool bottleneck)"""
         start_time = time.time()
 
         # Check if script exists
@@ -425,10 +431,6 @@ class HubWorker:
         # Check if dependencies are ready
         if script_name in self.script_dependencies_ready and not self.script_dependencies_ready[script_name]:
             self.logger.warning(f"[EXEC] Script {script_name} has unresolved dependencies, attempting execution anyway...")
-            # Try to install dependencies one more time
-            script_dir = self.scripts_dir / script_name
-            if script_dir.exists():
-                self.install_script_dependencies(script_dir)
 
         self.logger.info(f"Executing script '{script_name}' for remote '{remote_id}'")
 
@@ -442,80 +444,89 @@ class HubWorker:
                 # Check if script has pyproject.toml for dependencies
                 if (script_dir / "pyproject.toml").exists():
                     # Use UV to run with dependencies
-                    result = subprocess.run(
-                        ["uv", "run", str(script_path)],
-                        capture_output=True,
-                        text=True,
-                        timeout=15,  # Reduced from 30s to 15s
+                    proc = await asyncio.create_subprocess_exec(
+                        "uv", "run", str(script_path),
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.PIPE,
                         cwd=script_dir
                     )
                 else:
                     # Fallback to direct python execution
-                    result = subprocess.run(
-                        [sys.executable, str(script_path)],
-                        capture_output=True,
-                        text=True,
-                        timeout=15,  # Reduced from 30s to 15s
+                    proc = await asyncio.create_subprocess_exec(
+                        sys.executable, str(script_path),
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.PIPE,
                         cwd=script_dir
                     )
             elif (script_dir / f"{script_name}.ps1").exists():
                 script_path = script_dir / f"{script_name}.ps1"
-                result = subprocess.run(
-                    ["powershell", "-ExecutionPolicy", "Bypass", "-File", str(script_path)],
-                    capture_output=True,
-                    text=True,
-                    timeout=15,  # Reduced from 30s to 15s
+                proc = await asyncio.create_subprocess_exec(
+                    "powershell", "-ExecutionPolicy", "Bypass", "-File", str(script_path),
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
                     cwd=script_dir
                 )
             else:
                 return {"success": False, "error": f"Script file not found in directory: {script_name}", "duration_ms": 0}
 
-            duration_ms = int((time.time() - start_time) * 1000)
+            # Wait for completion with timeout
+            try:
+                stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=15.0)
+                stdout = stdout.decode('utf-8', errors='replace')
+                stderr = stderr.decode('utf-8', errors='replace')
+                
+                duration_ms = int((time.time() - start_time) * 1000)
 
-            # Enhanced success detection
-            success_indicators = [
-                result.returncode == 0,
-                "success" in result.stdout.lower(),
-                "completed" in result.stdout.lower(),
-                "done" in result.stdout.lower()
-            ]
-            
-            error_indicators = [
-                "error" in result.stderr.lower(),
-                "failed" in result.stderr.lower(),
-                "exception" in result.stderr.lower()
-            ]
-            
-            # Success if return code is 0 OR positive indicators found AND no errors
-            is_success = (result.returncode == 0 or any(success_indicators)) and not any(error_indicators)
-            
-            execution_result = {
-                "success": is_success,
-                "output": result.stdout if result.returncode == 0 else result.stderr,
-                "duration_ms": duration_ms,
-                "script_name": script_name,
-                "timestamp": datetime.now().isoformat()
-            }
+                # Enhanced success detection
+                success_indicators = [
+                    proc.returncode == 0,
+                    "success" in stdout.lower(),
+                    "completed" in stdout.lower(),
+                    "done" in stdout.lower()
+                ]
+                
+                error_indicators = [
+                    "error" in stderr.lower(),
+                    "failed" in stderr.lower(),
+                    "exception" in stderr.lower()
+                ]
+                
+                # Success if return code is 0 OR positive indicators found AND no errors
+                is_success = (proc.returncode == 0 or any(success_indicators)) and not any(error_indicators)
+                
+                execution_result = {
+                    "success": is_success,
+                    "output": stdout if proc.returncode == 0 else stderr,
+                    "duration_ms": duration_ms,
+                    "script_name": script_name,
+                    "timestamp": datetime.now().isoformat()
+                }
 
-            if result.returncode == 0:
-                self.logger.info(f"[SUCCESS] {script_name} executed successfully ({duration_ms}ms)")
-            else:
-                self.logger.error(f"Script '{script_name}' failed: {result.stderr}")
-                execution_result["error"] = result.stderr
+                if proc.returncode == 0:
+                    self.logger.info(f"[bright_green]✓[/bright_green] [bold]{script_name}[/bold] executed successfully [dim]({duration_ms}ms)[/dim]", extra={"markup": True})
+                else:
+                    self.logger.error(f"[bright_red]✗[/bright_red] [bold]{script_name}[/bold] failed: {stderr}", extra={"markup": True})
+                    execution_result["error"] = stderr
 
-            return execution_result
+                return execution_result
 
-        except subprocess.TimeoutExpired:
-            duration_ms = int((time.time() - start_time) * 1000)
-            self.logger.error(f"Script '{script_name}' timed out after 30 seconds")
-            return {
-                "success": False,
-                "error": "Script execution timed out (30s limit)",
-                "duration_ms": duration_ms
-            }
+            except asyncio.TimeoutError:
+                # Kill the process if it's still running
+                if proc.returncode is None:
+                    proc.kill()
+                    await proc.wait()
+                    
+                duration_ms = int((time.time() - start_time) * 1000)
+                self.logger.error(f"[bright_red]⏱[/bright_red] [bold]{script_name}[/bold] timed out after 15 seconds", extra={"markup": True})
+                return {
+                    "success": False,
+                    "error": "Script execution timed out (15s limit)",
+                    "duration_ms": duration_ms
+                }
+
         except Exception as e:
             duration_ms = int((time.time() - start_time) * 1000)
-            self.logger.error(f"Script execution error: {e}")
+            self.logger.error(f"Async script execution error: {e}")
             return {
                 "success": False,
                 "error": str(e),
@@ -526,13 +537,15 @@ class HubWorker:
         """Execute a script asynchronously and handle all database operations"""
         try:
             # Update command status to executing
+            db_start = time.time()
             self.supabase.table('script_commands').update({
                 'status': 'executing'
             }).eq('id', command_id).execute()
+            db_duration = int((time.time() - db_start) * 1000)
+            self.logger.info(f"[DB] Status update took {db_duration}ms [ID: {command_id}]")
             
-            # Execute the script (runs in executor to avoid blocking)
-            loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(None, self.execute_script, script_name, user_id)
+            # Execute the script directly with async subprocess (no thread pool bottleneck)
+            result = await self.execute_script_async_direct(script_name, user_id)
             final_status = 'completed' if result.get('success') else 'failed'
             
             # Record the result
@@ -603,6 +616,7 @@ class HubWorker:
                 return
 
             # Execute script asynchronously to allow concurrent execution
+            self.logger.info(f"[bright_blue]🚀[/bright_blue] [bold]Spawning async task[/bold] for [cyan]{script_name}[/cyan] [dim]\\[ID: {command_id}\\][/dim]", extra={"markup": True})
             asyncio.create_task(self.execute_script_async(script_name, user_id or 'unknown', command_id))
 
         except Exception as e:
@@ -781,11 +795,11 @@ class HubWorker:
         
         heartbeat_thread = threading.Thread(target=heartbeat, daemon=True)
         heartbeat_thread.start()
-        self.logger.info("[OK] Status heartbeat started")
+        self.logger.info("[bright_green]✓[/bright_green] [bold]Status heartbeat started[/bold]", extra={"markup": True})
 
     async def run_async(self):
         """Start the Hub Worker service (headless) with async real-time"""
-        self.logger.info("Starting Hub Worker (headless mode)")
+        self.console.print("\n[bold blue]Starting Hub Worker (headless mode)...[/bold blue]", style="bold")
 
         # Register with Supabase
         if not self.register_hub():
@@ -799,7 +813,17 @@ class HubWorker:
         # Start heartbeat thread
         self.start_heartbeat_thread()
 
-        self.logger.info("[READY] Hub Worker is ONLINE and ready for commands!")
+        # Rich ready panel
+        ready_panel = Panel.fit(
+            f"[bold green]HUB WORKER IS ONLINE AND READY![/bold green]\n\n"
+            f"[bright_green]✓[/bright_green] Real-time messaging: [green]Connected[/green]\n"
+            f"[bright_green]✓[/bright_green] Presence tracking: [green]Active[/green]\n"
+            f"[bright_green]✓[/bright_green] Status heartbeat: [green]Running[/green]\n\n"
+            f"[dim]Waiting for script execution commands...[/dim]",
+            title="[bold bright_green]🚀 READY FOR COMMANDS[/bold bright_green]",
+            border_style="bright_green"
+        )
+        self.console.print(ready_panel)
 
         try:
             # Keep running until interrupted

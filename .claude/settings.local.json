@@ -106,7 +106,9 @@
       "WebFetch(domain:remote-vercel-gm336fl3o-nachopaybacks-projects.vercel.app)",
       "mcp__supabase__apply_migration",
       "WebFetch(domain:remote-vercel-nxni8rlog-nachopaybacks-projects.vercel.app)",
-      "WebFetch(domain:remote-vercel-bgmhjqjc4-nachopaybacks-projects.vercel.app)"
+      "WebFetch(domain:remote-vercel-bgmhjqjc4-nachopaybacks-projects.vercel.app)",
+      "WebFetch(domain:remote-35ski5d7l-nachopaybacks-projects.vercel.app)",
+      "Bash(git config:*)"
     ],
     "deny": []
   }

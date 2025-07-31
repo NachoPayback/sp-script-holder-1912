@@ -157,17 +157,21 @@ body::before {
     text-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
 }
 
+/* ===== SCRIPT BUTTON GRID LAYOUT ===== */
 .script-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 32px;
     padding: 20px;
+    justify-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
+/* ===== SCRIPT BUTTON STYLING (CUSTOM ROUNDED HEXAGON) ===== */
 .script-btn {
     width: 180px;
-    height: 180px;
-    border-radius: 50%;
+    height: 180px; /* Back to square proportions */
     border: 3px solid;
     background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
     color: #ffffff;
@@ -181,11 +185,14 @@ body::before {
     justify-content: center;
     gap: 8px;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     text-align: center;
     padding: 20px;
+    /* Your custom rounded hexagon shape - properly scaled */
+    clip-path: path("M 245.57 681.92 C 204.82 681.92 166.85 659.99 146.48 624.71 L 15.83 398.42 C -4.54 363.13 -4.54 319.28 15.83 283.99 L 146.48 57.71 C 166.85 22.42 204.82 0.5 245.57 0.5 L 506.86 0.5 C 547.61 0.5 585.58 22.42 605.96 57.71 L 736.61 283.99 C 756.98 319.28 756.98 363.13 736.61 398.42 L 605.96 624.71 C 585.58 659.99 547.61 681.92 506.86 681.92 L 245.57 681.92 Z");
 }
 
+/* ===== SCRIPT BUTTON HOVER & ACTIVE STATES ===== */
 .script-btn:hover {
     transform: scale(1.08);
 }
@@ -194,6 +201,7 @@ body::before {
     transform: scale(0.95);
 }
 
+/* ===== SCRIPT BUTTON TEXT CONTENT ===== */
 .execute-text {
     font-size: 1.1rem;
     font-weight: 700;
@@ -311,13 +319,6 @@ body::before {
     font-weight: 600;
 }
 
-.activity-items {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    max-height: 200px;
-    overflow-y: auto;
-}
 
 .activity-item {
     padding: 8px 12px;

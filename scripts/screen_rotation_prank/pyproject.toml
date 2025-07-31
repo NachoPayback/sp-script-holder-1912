@@ -3,7 +3,7 @@ name = "screen-rotation-prank"
 version = "1.0.0"
 description = "Rotates screen orientation for prank"
 dependencies = [
-    "rotate-screen>=1.0.0"
+    "rotate-screen>=0.1.5"
 ]
 
 [build-system]

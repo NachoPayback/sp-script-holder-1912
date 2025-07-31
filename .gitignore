@@ -1,66 +1,43 @@
-# Build artifacts
-build/
-dist/
-dist_hub/
-dist_remote/
-*.spec
-*.exe
-
-# Python artifacts
+# Python
 __pycache__/
 *.py[cod]
-*$py.class
+*.class
 *.so
-.Python
-env/
-venv/
-.venv
-.env
 
-# Configuration files with sensitive data
-hub_token.json
-paired_remotes.json
-remote_config.json
-disabled_scripts.json
-global_settings.json
+# Build artifacts
+*.egg-info/
+build/
+dist/
+*.spec
 
-# Log files
-logs/
-*.log
-
-# IDE files
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
-# OS files
+# OS
 .DS_Store
 Thumbs.db
 
-# PyInstaller
-*.manifest
+# Logs
+*.log
+hub/logs/
 
-# UV and cache files
+# Environment
+.env
+.venv/
+venv/
+
+# UV
+.uv/
 uv.lock
-uv_embedded/
-.ruff_cache/
-.pytest_cache/
-.mypy_cache/
 
-# Temporary files
-*.tmp
-*.temp
-*.bak
-*.backup
-.vercel
-
-# Legacy code - no longer needed
-legacy/
-
-# Test files
-test_*.py
-test_*.js
+# Node.js (for remote)
 node_modules/
-package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Vercel
+.vercel/
