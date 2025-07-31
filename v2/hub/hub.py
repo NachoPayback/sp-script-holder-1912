@@ -143,20 +143,38 @@ class HubWorker:
             return False
 
     def pull_latest_scripts(self):
-        """Pull latest scripts from git repository"""
+        """Pull latest scripts from git repository (scripts directory only)"""
         try:
             self.logger.debug("Pulling latest scripts from repository...")
+            
+            # Use sparse checkout to only pull scripts directory
+            # First, ensure sparse checkout is enabled
+            subprocess.run(
+                ["git", "config", "core.sparseCheckout", "true"],
+                cwd=project_root,
+                capture_output=True,
+                timeout=10
+            )
+            
+            # Set sparse checkout to only include scripts
+            sparse_checkout_file = project_root / ".git" / "info" / "sparse-checkout"
+            with open(sparse_checkout_file, 'w') as f:
+                f.write("scripts/\n")
+            
+            # Pull only the scripts directory
             result = subprocess.run(
-                ["git", "pull"],
+                ["git", "pull", "origin", "master"],
                 cwd=project_root,
                 capture_output=True,
                 text=True,
                 timeout=30
             )
+            
             if result.returncode == 0:
                 self.logger.debug("Successfully pulled latest scripts")
             else:
                 self.logger.warning(f"Git pull failed: {result.stderr}")
+                
         except Exception as e:
             self.logger.error(f"Error pulling latest scripts: {e}")
 
