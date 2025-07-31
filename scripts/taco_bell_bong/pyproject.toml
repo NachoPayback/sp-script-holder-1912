@@ -1,0 +1,11 @@
+[project]
+name = "taco-bell-bong"
+version = "1.0.0"
+description = "Plays Taco Bell bong sound effect"
+dependencies = [
+    "pygame>=2.0.0"
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"

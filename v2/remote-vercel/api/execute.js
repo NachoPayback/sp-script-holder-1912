@@ -23,22 +23,22 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { hub_id, script_name, remote_id } = req.body;
+    const { hub_id, script_name, user_id } = req.body;
 
-    if (!hub_id || !script_name || !remote_id) {
+    if (!hub_id || !script_name || !user_id) {
       return res.status(400).json({ 
-        error: 'hub_id, script_name, and remote_id required' 
+        error: 'hub_id, script_name, and user_id required' 
       });
     }
 
     // Insert command into script_commands table (triggers hub via real-time)
     const { data: command, error: insertError } = await supabase
-      .table('script_commands')
+      .from('script_commands')
       .insert({
         hub_id,
-        remote_id,
+        user_id,
         script_name,
-        created_at: new Date().toISOString()
+        status: 'pending'
       })
       .select()
       .single();
@@ -68,9 +68,9 @@ async function waitForResult(commandId, timeout = 35000) {
     try {
       // Check for result in script_results table
       const { data: results, error } = await supabase
-        .table('script_results')
+        .from('script_results')
         .select('*')
-        .eq('message_id', commandId)
+        .eq('command_id', commandId)
         .limit(1);
 
       if (error) {
@@ -79,8 +79,33 @@ async function waitForResult(commandId, timeout = 35000) {
       }
 
       if (results && results.length > 0) {
-        const resultData = results[0];
-        return resultData.result || { success: false, error: 'No result data' };
+        const result = results[0];
+        return {
+          success: result.success,
+          output: result.stdout,
+          error: result.stderr,
+          duration_ms: 0 // We don't track duration in new format yet
+        };
+      }
+
+      // Also check command status for early failure detection
+      const { data: commands, error: cmdError } = await supabase
+        .from('script_commands')
+        .select('status')
+        .eq('id', commandId)
+        .limit(1);
+
+      if (!cmdError && commands && commands.length > 0) {
+        const status = commands[0].status;
+        
+        // If command failed without creating a result record
+        if (status === 'failed') {
+          return { 
+            success: false, 
+            error: 'Script execution failed (no result recorded)',
+            output: ''
+          };
+        }
       }
 
       // Wait 100ms before checking again

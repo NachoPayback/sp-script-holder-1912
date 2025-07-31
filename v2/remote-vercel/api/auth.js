@@ -5,8 +5,8 @@ const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
 
 const supabase = createClient(
-  'https://qcefzjjxnwccjivsbtgb.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjZWZ6amp4bndjY2ppdnNidGdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4MjA4OTIsImV4cCI6MjA2OTM5Njg5Mn0.qAW4A2-RVg114QiAnJF3KMXrySIYu9EKHNrhWgpibS4'
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
 );
 
 // Users are stored securely in Supabase database
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
 
     // Get user from Supabase database
     const { data: users, error } = await supabase
-      .table('users')
+      .from('users')
       .select('*')
       .eq('username', username)
       .limit(1);

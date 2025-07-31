@@ -1,0 +1,11 @@
+[project]
+name = "change-desktop-icons"
+version = "1.0.0"
+description = "Changes desktop icon arrangement"
+dependencies = [
+    "pywin32>=306"
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"

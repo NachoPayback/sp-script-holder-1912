@@ -1,0 +1,11 @@
+[project]
+name = "browser-tab-chaos"
+version = "1.0.0"
+description = "Opens multiple browser tabs for chaos effect"
+dependencies = [
+    "selenium>=4.0.0"
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"

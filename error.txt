@@ -1,0 +1,61 @@
+(p-buttons) PS E:\CodeTests\P_Buttons\v2\hub> cd "E:\CodeTests\P_Buttons\v2\hub"; python hub.py
+2025-07-31 12:39:35,558 - INFO - Hub Worker initialized [ID: 4ecc4cd2d7cdb740] - Found 12 scripts
+2025-07-31 12:39:35,559 - INFO - Starting Hub Worker (headless mode)
+2025-07-31 12:39:35,895 - INFO - [OK] Hub registered successfully [Hub ID: dafa98d0-8f3d-4984-a797-0d0a5248c535]
+2025-07-31 12:39:36,689 - INFO - [OK] Real-time messaging connected
+2025-07-31 12:39:36,690 - INFO - [OK] Presence tracking active
+2025-07-31 12:39:36,690 - INFO - [HEARTBEAT] Starting heartbeat loop
+2025-07-31 12:39:36,690 - INFO - [OK] Status heartbeat started
+2025-07-31 12:39:36,690 - INFO - [READY] Hub Worker is ONLINE and ready for commands!
+E:\CodeTests\P_Buttons\v2\hub\hub.py:606: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  current_time = datetime.utcnow().isoformat() + 'Z'
+2025-07-31 12:39:36,822 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:39:36.690998Z
+2025-07-31 12:39:47,013 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:39:46.823439Z
+2025-07-31 12:39:56,628 - INFO - Received real-time message: {'data': {'table': 'script_commands', 'type': 'INSERT', 'record': {'created_at': '2025-07-31T16:39:56.015599+00:00', 'hub_id': 'dafa98d0-8f3d-4984-a797-0d0a5248c535', 'id': 'f3feb54d-605a-454d-b917-fd2e94a54d22', 'script_name': 'minimize_windows', 'status': 'pending', 'user_id': 'NachoPayback'}, 'columns': [{'name': 'hub_id', 'type': 'uuid'}, {'name': 'script_name', 'type': 'text'}, {'name': 'created_at', 'type': 'timestamptz'}, {'name': 'id', 'type': 'uuid'}, {'name': 'status', 'type': 'text'}, {'name': 'user_id', 'type': 'text'}], 'errors': None, 'schema': 'public', 'commit_timestamp': '2025-07-31T16:39:56.027Z'}, 'ids': [5401942]}
+2025-07-31 12:39:56,717 - INFO - Executing script 'minimize_windows' for remote 'NachoPayback'
+2025-07-31 12:39:57,084 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:39:57.013954Z
+2025-07-31 12:40:02,195 - INFO - [SUCCESS] minimize_windows executed successfully (5478ms)
+2025-07-31 12:40:02,415 - ERROR - Failed to record result for command f3feb54d-605a-454d-b917-fd2e94a54d22: {'message': 'null value in column "result" of relation "script_results" violates not-null constraint', 'code': '23502', 'hint': None, 'details': 'Failing row contains (1, script_result, null, 2025-07-31 16:40:01.884043+00, f3feb54d-605a-454d-b917-fd2e94a54d22, 0, Minimizing all windows...\nAll windows minimized! Waiting 5 secon..., , t).'}
+2025-07-31 12:40:07,159 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:40:07.085256Z
+2025-07-31 12:40:17,339 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:40:17.160359Z
+2025-07-31 12:40:27,476 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:40:27.339788Z
+2025-07-31 12:40:37,567 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:40:37.477225Z
+2025-07-31 12:40:47,732 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:40:47.568366Z
+2025-07-31 12:40:57,851 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:40:57.733270Z
+2025-07-31 12:41:08,023 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:41:07.852822Z
+2025-07-31 12:41:18,131 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:41:18.024378Z
+2025-07-31 12:41:28,232 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:41:28.131620Z
+2025-07-31 12:41:38,392 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:41:38.232835Z
+2025-07-31 12:41:48,593 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:41:48.393163Z
+2025-07-31 12:41:58,702 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:41:58.593845Z
+2025-07-31 12:42:08,810 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:42:08.702688Z
+2025-07-31 12:42:18,932 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:42:18.810978Z
+2025-07-31 12:42:29,052 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:42:28.932393Z
+2025-07-31 12:42:39,214 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:42:39.052472Z
+2025-07-31 12:42:49,381 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:42:49.214703Z
+2025-07-31 12:42:59,517 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:42:59.381543Z
+2025-07-31 12:43:09,674 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:43:09.517805Z
+2025-07-31 12:43:19,872 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:43:19.674766Z
+2025-07-31 12:43:30,031 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:43:29.873003Z
+2025-07-31 12:43:40,218 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:43:40.031579Z
+2025-07-31 12:43:50,315 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:43:50.219366Z
+2025-07-31 12:44:00,460 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:44:00.316410Z
+2025-07-31 12:44:10,558 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:44:10.460643Z
+2025-07-31 12:44:20,655 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:44:20.558752Z
+2025-07-31 12:44:30,802 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:44:30.656112Z
+2025-07-31 12:44:40,918 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:44:40.803078Z
+2025-07-31 12:44:51,068 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:44:50.918975Z
+2025-07-31 12:44:59,358 - INFO - Received real-time message: {'data': {'table': 'script_commands', 'type': 'INSERT', 'record': {'created_at': '2025-07-31T16:44:58.791895+00:00', 'hub_id': 'dafa98d0-8f3d-4984-a797-0d0a5248c535', 'id': '574ebeda-add4-44aa-a208-475a3ac0502f', 'script_name': 'taco_bell_bong', 'status': 'pending', 'user_id': 'NachoPayback'}, 'columns': [{'name': 'hub_id', 'type': 'uuid'}, {'name': 'script_name', 'type': 'text'}, {'name': 'created_at', 'type': 'timestamptz'}, {'name': 'id', 'type': 'uuid'}, {'name': 'status', 'type': 'text'}, {'name': 'user_id', 'type': 'text'}], 'errors': None, 'schema': 'public', 'commit_timestamp': '2025-07-31T16:44:58.801Z'}, 'ids': [5401942]}
+2025-07-31 12:44:59,475 - INFO - Executing script 'taco_bell_bong' for remote 'NachoPayback'
+2025-07-31 12:44:59,523 - ERROR - Script 'taco_bell_bong' failed: Traceback (most recent call last):
+  File "E:\CodeTests\P_Buttons\scripts\taco_bell_bong\taco_bell_bong.py", line 7, in <module>
+    import pygame
+ModuleNotFoundError: No module named 'pygame'
+
+2025-07-31 12:44:59,632 - ERROR - Failed to record result for command 574ebeda-add4-44aa-a208-475a3ac0502f: {'message': 'null value in column "result" of relation "script_results" violates not-null constraint', 'code': '23502', 'hint': None, 'details': 'Failing row contains (2, script_result, null, 2025-07-31 16:44:59.141087+00, 574ebeda-add4-44aa-a208-475a3ac0502f, 1, Traceback (most recent call last):\n  File "E:\\CodeTests\\P_Button..., Traceback (most recent call last):\n  File "E:\\CodeTests\\P_Button..., f).'}
+2025-07-31 12:45:01,203 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:45:01.069247Z
+2025-07-31 12:45:11,297 - INFO - [HEARTBEAT] Updated last_seen to 2025-07-31T16:45:11.203954Z
+2025-07-31 12:45:11,769 - INFO - Received real-time message: {'data': {'table': 'script_commands', 'type': 'INSERT', 'record': {'created_at': '2025-07-31T16:45:11.214892+00:00', 'hub_id': 'dafa98d0-8f3d-4984-a797-0d0a5248c535', 'id': '4d00ee3b-bfce-4130-b2ab-97aaf04c237c', 'script_name': 'system_maintenance', 'status': 'pending', 'user_id': 'NachoPayback'}, 'columns': [{'name': 'hub_id', 'type': 'uuid'}, {'name': 'script_name', 'type': 'text'}, {'name': 'created_at', 'type': 'timestamptz'}, {'name': 'id', 'type': 'uuid'}, {'name': 'status', 'type': 'text'}, {'name': 'user_id', 'type': 'text'}], 'errors': None, 'schema': 'public', 'commit_timestamp': '2025-07-31T16:45:11.216Z'}, 'ids': [5401942]}
+2025-07-31 12:45:11,849 - INFO - Executing script 'system_maintenance' for remote 'NachoPayback'
+2025-07-31 12:45:14,678 - INFO - [SUCCESS] system_maintenance executed successfully (2828ms)
+2025-07-31 12:45:14,750 - ERROR - Failed to record result for command 4d00ee3b-bfce-4130-b2ab-97aaf04c237c: {'message': 'null value in column "result" of relation "script_results" violates not-null constraint', 'code': '23502', 'hint': None, 'details': 'Failing row contains (3, script_result, null, 2025-07-31 16:45:14.27851+00, 4d00ee3b-bfce-4130-b2ab-97aaf04c237c, 0, OK\nProcess executed successfully!\nProcess executed successfully!..., , t).'}

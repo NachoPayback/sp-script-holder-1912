@@ -1,0 +1,11 @@
+[project]
+name = "minimize-windows"
+version = "1.0.0"
+description = "Minimizes and restores windows"
+dependencies = [
+    "pyautogui>=0.9.50"
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
