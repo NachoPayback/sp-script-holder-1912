@@ -94,29 +94,28 @@ class HubWorker:
         try:
             self.logger.info(f"[DEPS] Installing dependencies for {script_name}...")
             
-            # First, ensure UV virtual environment exists
-            venv_result = subprocess.run(
-                ["uv", "venv", "--python", "3.11"],
-                cwd=script_dir,
-                capture_output=True,
-                text=True,
-                timeout=30
-            )
-            
-            # Install/sync dependencies
             if pyproject_path.exists():
-                # Use pyproject.toml
+                # Initialize UV project if needed and install dependencies
+                # First, create venv if it doesn't exist
+                subprocess.run(
+                    ["uv", "venv"],
+                    cwd=script_dir,
+                    capture_output=True,
+                    timeout=30
+                )
+                
+                # Install dependencies from pyproject.toml
                 result = subprocess.run(
-                    ["uv", "sync", "--frozen"],
+                    ["uv", "pip", "install", "-e", "."],
                     cwd=script_dir,
                     capture_output=True,
                     text=True,
                     timeout=120
                 )
             else:
-                # Use inline script dependencies (PEP 723)
+                # Use inline script dependencies (PEP 723) 
                 result = subprocess.run(
-                    ["uv", "run", "--with-requirements", script_py_path, "--help"],
+                    ["uv", "run", script_py_path.name, "--help"],  # This will install deps
                     cwd=script_dir,
                     capture_output=True,
                     text=True,
@@ -156,10 +155,10 @@ class HubWorker:
                 timeout=10
             )
             
-            # Set sparse checkout to only include scripts
+            # Set sparse checkout to include scripts directory (includes all subdirs and pyproject.toml files)
             sparse_checkout_file = project_root / ".git" / "info" / "sparse-checkout"
             with open(sparse_checkout_file, 'w') as f:
-                f.write("scripts/\n")
+                f.write("scripts/\n")  # Includes all script files, subdirectories, and pyproject.toml files
             
             # Pull only the scripts directory
             result = subprocess.run(
