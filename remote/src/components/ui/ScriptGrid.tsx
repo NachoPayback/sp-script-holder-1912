@@ -10,7 +10,7 @@ interface ScriptGridProps {
   assignment?: Assignment;
   mode: 'shared' | 'assigned';
   showScriptNames: boolean;
-  friendlyNames: Record<string, { friendly_name: string }>;
+  friendlyNames: Record<string, { friendly_name: string; image_url?: string }>;
   onScriptExecute: (scriptName: string) => void;
 }
 
@@ -51,6 +51,7 @@ export const ScriptGrid: React.FC<ScriptGridProps> = ({
           scriptName={assignment.assigned_script}
           color={assignment.script_color || theme.colors.primary}
           friendlyName={friendlyNames[assignment.assigned_script]?.friendly_name}
+          imageUrl={friendlyNames[assignment.assigned_script]?.image_url}
           showName={showScriptNames}
           onClick={() => onScriptExecute(assignment.assigned_script)}
         />
@@ -67,14 +68,17 @@ export const ScriptGrid: React.FC<ScriptGridProps> = ({
       {scripts.map((script, index) => {
         const color = generateScriptColor(index);
         const scriptName = typeof script === 'string' ? script : script.script_name;
-        const friendlyName = typeof script === 'string' ? script : script.friendly_name;
+        // Prioritize friendly names from database over script object
+        const friendlyName = friendlyNames[scriptName]?.friendly_name;
+        const imageUrl = friendlyNames[scriptName]?.image_url;
         
         return (
           <HexagonButton
             key={scriptName}
             scriptName={scriptName}
             color={color}
-            friendlyName={friendlyName || friendlyNames[scriptName]?.friendly_name}
+            friendlyName={friendlyName}
+            imageUrl={imageUrl}
             showName={true} // Always show names in shared mode
             onClick={() => onScriptExecute(scriptName)}
           />

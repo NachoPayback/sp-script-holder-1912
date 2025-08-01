@@ -4,6 +4,7 @@ import { LoginForm } from './components/auth/LoginForm';
 import { ScriptGrid } from './components/ui/ScriptGrid';
 import { ActivityFeed } from './components/ui/ActivityFeed';
 import { ToastContainer } from './components/ui/ToastContainer';
+import { SettingsModal } from './components/ui/SettingsModal';
 import { useAuth, useHub, useActivity, useUI } from './hooks/useServices';
 import { theme } from './styles/theme';
 import type { Hub } from './types/Hub';
@@ -22,6 +23,7 @@ const AppContainer = styled.div`
   flex-direction: column;
   overflow: hidden;
   
+  /* Hexagon pattern background */
   &::before {
     content: '';
     position: absolute;
@@ -29,26 +31,55 @@ const AppContainer = styled.div`
     left: 0;
     right: 0;
     bottom: 0;
-    background: 
-      radial-gradient(circle at 20% 30%, rgba(56, 189, 248, 0.15) 0%, transparent 40%),
-      radial-gradient(circle at 80% 70%, rgba(59, 130, 246, 0.1) 0%, transparent 40%),
-      radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 60%);
-    animation: backgroundShift 20s ease-in-out infinite;
-    z-index: -1;
+    background-image: 
+      radial-gradient(circle at 20% 30%, ${theme.colors.glow} 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, ${theme.colors.glow} 0%, transparent 50%);
+    opacity: 0.5;
+    z-index: 0;
   }
   
-  @keyframes backgroundShift {
-    0%, 100% { transform: scale(1) rotate(0deg); }
-    50% { transform: scale(1.1) rotate(5deg); }
+  /* Tech grid overlay */
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      linear-gradient(${theme.colors.border} 1px, transparent 1px),
+      linear-gradient(90deg, ${theme.colors.border} 1px, transparent 1px);
+    background-size: 100px 100px;
+    opacity: 0.03;
+    z-index: 1;
+  }
+  
+  > * {
+    position: relative;
+    z-index: 2;
   }
 `;
 
 const Header = styled.header`
-  background: rgba(30, 41, 59, 0.3);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-  padding: 20px 40px;
-  backdrop-filter: blur(20px);
+  background: ${theme.colors.surface};
+  border-bottom: 1px solid ${theme.colors.border};
+  padding: ${theme.spacing.lg} ${theme.spacing.xl};
+  backdrop-filter: blur(10px);
   flex-shrink: 0;
+  box-shadow: ${theme.shadows.md};
+  position: relative;
+  
+  /* Electric accent line */
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: ${theme.gradients.electric};
+    opacity: 0.8;
+  }
 `;
 
 const HeaderContent = styled.div`
@@ -59,15 +90,31 @@ const HeaderContent = styled.div`
 `;
 
 const Title = styled.h1`
-  font-size: 4rem;
-  font-weight: 900;
-  letter-spacing: -0.02em;
-  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #6366f1 100%);
+  font-size: 3rem;
+  font-weight: ${theme.fonts.weights.black};
+  letter-spacing: -0.03em;
+  background: ${theme.gradients.electric};
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin: 0;
-  text-shadow: 0 0 40px rgba(59, 130, 246, 0.5);
+  text-transform: uppercase;
+  position: relative;
+  
+  /* Subtle glow effect */
+  &::before {
+    content: 'SP CREW CONTROL';
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    background: ${theme.gradients.electric};
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: blur(10px);
+    opacity: 0.5;
+  }
 `;
 
 const MainContent = styled.main`
@@ -87,13 +134,35 @@ const ContentArea = styled.div`
 `;
 
 const Sidebar = styled.aside<{ $show: boolean }>`
-  width: 300px;
-  background: rgba(30, 41, 59, 0.5);
-  border-left: 1px solid rgba(148, 163, 184, 0.1);
-  padding: 24px;
+  width: 320px;
+  background: ${theme.colors.surface};
+  border-left: 2px solid ${theme.colors.border};
+  padding: ${theme.spacing.lg};
   display: ${props => props.$show ? 'block' : 'none'};
   overflow-y: auto;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(20px);
+  position: relative;
+  
+  /* Subtle tech grid pattern */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      linear-gradient(${theme.colors.borderLight} 1px, transparent 1px),
+      linear-gradient(90deg, ${theme.colors.borderLight} 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.1;
+    z-index: 0;
+  }
+  
+  > * {
+    position: relative;
+    z-index: 1;
+  }
 `;
 
 const HubListContainer = styled.div`
@@ -107,24 +176,71 @@ const HubListHeader = styled.div`
 `;
 
 const RefreshButton = styled.button`
-  background: rgba(30, 41, 59, 0.5);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  color: #e2e8f0;
-  padding: 12px 24px;
-  border-radius: 12px;
+  background: ${theme.colors.surface};
+  border: 2px solid ${theme.colors.primary};
+  color: ${theme.colors.primary};
+  padding: ${theme.spacing.md} ${theme.spacing.xl};
+  border-radius: ${theme.borderRadius.md};
   cursor: pointer;
-  font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 600;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  font-family: ${theme.fonts.family};
+  font-size: 0.9rem;
+  font-weight: ${theme.fonts.weights.bold};
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: all ${theme.animations.fast} ${theme.animations.easing};
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: ${theme.gradients.electric};
+    transition: left ${theme.animations.normal} ${theme.animations.easing};
+    z-index: -1;
+  }
   
   &:hover {
-    background: rgba(59, 130, 246, 0.2);
-    border-color: rgba(59, 130, 246, 0.5);
+    color: ${theme.colors.text};
     transform: translateY(-2px);
-    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+    box-shadow: ${theme.shadows.glow};
+    
+    &::before {
+      left: 0;
+    }
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+const LogoutButton = styled.button`
+  background: ${theme.colors.error};
+  border: 2px solid ${theme.colors.error};
+  color: ${theme.colors.text};
+  padding: ${theme.spacing.sm} ${theme.spacing.md};
+  border-radius: ${theme.borderRadius.md};
+  cursor: pointer;
+  font-family: ${theme.fonts.family};
+  font-size: 0.85rem;
+  font-weight: ${theme.fonts.weights.bold};
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all ${theme.animations.fast} ${theme.animations.easing};
+  
+  &:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  }
+  
+  &:active {
+    transform: translateY(0);
   }
 `;
 
@@ -137,35 +253,59 @@ const HubGrid = styled.div`
 `;
 
 const HubCard = styled.div`
-  background: rgba(30, 41, 59, 0.5);
-  border: 1px solid rgba(148, 163, 184, 0.1);
-  border-radius: 16px;
-  padding: 24px;
+  background: ${theme.colors.surface};
+  border: 1px solid ${theme.colors.border};
+  border-radius: ${theme.borderRadius.lg};
+  padding: ${theme.spacing.lg};
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
+  transition: all ${theme.animations.normal} ${theme.animations.easing};
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  
+  /* Hexagon corner accent */
+  &::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    width: 60px;
+    height: 60px;
+    background: ${theme.gradients.electric};
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    opacity: 0.1;
+    transition: opacity ${theme.animations.fast} ${theme.animations.easing};
+  }
   
   &:hover {
-    transform: translateY(-4px);
-    border-color: rgba(59, 130, 246, 0.3);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    transform: translateY(-4px) scale(1.02);
+    border-color: ${theme.colors.primary};
+    background: ${theme.colors.surfaceLight};
+    box-shadow: ${theme.shadows.glow};
+    
+    &::before {
+      opacity: 0.3;
+    }
+    
+    h3 {
+      color: ${theme.colors.primary};
+    }
   }
   
   h3 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #f1f5f9;
-    margin-bottom: 8px;
+    font-size: 1.4rem;
+    font-weight: ${theme.fonts.weights.bold};
+    color: ${theme.colors.text};
+    margin-bottom: ${theme.spacing.sm};
+    transition: color ${theme.animations.fast} ${theme.animations.easing};
   }
   
   p {
-    font-size: 0.9rem;
-    color: #94a3b8;
-    font-weight: 500;
-    margin: 4px 0;
+    font-size: 0.85rem;
+    color: ${theme.colors.textSecondary};
+    font-weight: ${theme.fonts.weights.medium};
+    margin: ${theme.spacing.xs} 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 `;
 
@@ -183,35 +323,66 @@ const BackHeader = styled.div`
 `;
 
 const BackButton = styled.button`
-  background: rgba(30, 41, 59, 0.5);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  color: #e2e8f0;
-  padding: 8px 16px;
-  border-radius: 8px;
+  background: ${theme.colors.surface};
+  border: 2px solid ${theme.colors.border};
+  color: ${theme.colors.textSecondary};
+  padding: ${theme.spacing.sm} ${theme.spacing.md};
+  border-radius: ${theme.borderRadius.md};
   cursor: pointer;
-  font-family: inherit;
-  font-weight: 600;
-  transition: all 0.2s ease;
+  font-family: ${theme.fonts.family};
+  font-weight: ${theme.fonts.weights.bold};
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all ${theme.animations.fast} ${theme.animations.easing};
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: ${theme.gradients.electric};
+    transition: left ${theme.animations.normal} ${theme.animations.easing};
+    z-index: -1;
+  }
   
   &:hover {
-    background: rgba(59, 130, 246, 0.2);
-    border-color: rgba(59, 130, 246, 0.5);
+    background: ${theme.colors.surfaceLight};
+    border-color: ${theme.colors.primary};
+    color: ${theme.colors.primary};
+    transform: translateY(-1px);
+    
+    &::before {
+      left: 0;
+    }
+  }
+  
+  &:active {
+    transform: translateY(0);
   }
 `;
 
 const SectionTitle = styled.h2`
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #f1f5f9;
-  margin: 0 0 24px 0;
+  font-size: 1.1rem;
+  font-weight: ${theme.fonts.weights.bold};
+  color: ${theme.colors.primary};
+  margin: 0 0 ${theme.spacing.lg} 0;
   text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 8px currentColor;
 `;
 
 const LoadingMessage = styled.div`
   text-align: center;
-  color: #94a3b8;
-  padding: 48px;
+  color: ${theme.colors.textSecondary};
+  padding: ${theme.spacing.xxxl};
   font-size: 1.1rem;
+  font-family: ${theme.fonts.mono};
+  letter-spacing: 0.05em;
 `;
 
 function AppWithServices() {
@@ -227,12 +398,14 @@ function AppWithServices() {
     discoverHubs, 
     connectToHub, 
     executeScript, 
-    backToHubs 
+    backToHubs,
+    reloadFriendlyNames
   } = useHub();
   const { items: activity, addToActivityLog } = useActivity();
   const { showSuccess, showError } = useUI();
   
   const [view, setView] = useState<'hubs' | 'scripts'>('hubs');
+  const [showSettings, setShowSettings] = useState(false);
 
   const handleHubSelect = async (hub: Hub) => {
     try {
@@ -260,6 +433,42 @@ function AppWithServices() {
     }
   };
 
+  const handleSettingsClick = () => {
+    setShowSettings(true);
+  };
+
+  const handleCloseSettings = () => {
+    setShowSettings(false);
+  };
+
+  const handleFriendlyNamesUpdate = async () => {
+    await reloadFriendlyNames();
+    // Don't show success toast here - let the settings modal handle it
+  };
+
+  const handleHubSettingsUpdate = async (mode: 'shared' | 'assigned', showNames: boolean, enableTimer: boolean, timerMinutes: number) => {
+    if (selectedHub) {
+      // Update hub settings locally (in a real app this would save to database)
+      selectedHub.mode = mode;
+      selectedHub.show_script_names = showNames;
+      
+      // For now, just show success message
+      showSuccess(`Settings updated: ${mode === 'assigned' ? '1 Button' : 'All Buttons'} mode`);
+      
+      // TODO: Implement timer functionality
+      if (mode === 'assigned' && enableTimer) {
+        showSuccess(`Timer enabled: ${timerMinutes} minutes`);
+      }
+    }
+  };
+
+  const handleShuffleScripts = () => {
+    if (selectedHub?.mode === 'assigned') {
+      showSuccess('Button shuffled');
+      // TODO: Implement actual shuffle functionality
+    }
+  };
+
   if (!user) {
     return (
       <ThemeProvider theme={theme}>
@@ -282,22 +491,12 @@ function AppWithServices() {
           <HeaderContent>
             <Title>SP CREW CONTROL</Title>
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-              <span style={{ color: '#94a3b8' }}>
+              <span style={{ color: theme.colors.textSecondary, fontFamily: theme.fonts.mono, letterSpacing: '0.05em' }}>
                 {user.username}
               </span>
-              <button 
-                onClick={logout}
-                style={{
-                  background: '#ef4444',
-                  color: 'white',
-                  border: 'none',
-                  padding: '8px 16px',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-              >
+              <LogoutButton onClick={logout}>
                 LOGOUT
-              </button>
+              </LogoutButton>
             </div>
           </HeaderContent>
         </Header>
@@ -332,7 +531,7 @@ function AppWithServices() {
                 <BackHeader>
                   <BackButton onClick={handleBackToHubs}>← BACK</BackButton>
                   <h2>{selectedHub?.friendly_name}</h2>
-                  <button>⚙ SETTINGS</button>
+                  <BackButton onClick={handleSettingsClick}>⚙ SETTINGS</BackButton>
                 </BackHeader>
                 <ScriptGrid
                   scripts={scripts}
@@ -351,7 +550,13 @@ function AppWithServices() {
               <SectionTitle>Connected Users</SectionTitle>
               <div>
                 {connectedUsers.map((user: { username?: string; user_id?: string }, index) => (
-                  <div key={index} style={{ padding: '4px 0', color: '#94a3b8' }}>
+                  <div key={index} style={{ 
+                    padding: `${theme.spacing.xs} 0`, 
+                    color: theme.colors.textSecondary,
+                    fontFamily: theme.fonts.mono,
+                    fontSize: '0.9rem',
+                    letterSpacing: '0.02em'
+                  }}>
                     {user.username || user.user_id}
                   </div>
                 ))}
@@ -364,6 +569,18 @@ function AppWithServices() {
             </div>
           </Sidebar>
         </MainContent>
+        
+        <SettingsModal
+          isOpen={showSettings}
+          onClose={handleCloseSettings}
+          scripts={scripts}
+          friendlyNames={friendlyNames}
+          hubMode={selectedHub?.mode || 'shared'}
+          showScriptNames={selectedHub?.show_script_names || false}
+          onFriendlyNamesUpdate={handleFriendlyNamesUpdate}
+          onHubSettingsUpdate={handleHubSettingsUpdate}
+          onShuffleScripts={handleShuffleScripts}
+        />
         
         <ToastContainer />
       </AppContainer>

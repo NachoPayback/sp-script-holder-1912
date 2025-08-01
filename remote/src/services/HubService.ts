@@ -210,6 +210,22 @@ class HubService {
   getConnectedHub(): Hub | null {
     return this.state.selectedHub;
   }
+
+  async reloadFriendlyNames(): Promise<void> {
+    if (!this.state.selectedHub || this.state.scripts.length === 0) return;
+
+    try {
+      const scriptNames = this.state.scripts.map(s => 
+        typeof s === 'string' ? s : s.script_name
+      );
+      const friendlyResponse = await hubApi.getFriendlyNames(scriptNames);
+      const friendlyNames = friendlyResponse.success ? friendlyResponse.friendly_names : {};
+
+      this.setState({ friendlyNames });
+    } catch (error) {
+      console.error('Failed to reload friendly names:', error);
+    }
+  }
 }
 
 // Export singleton instance

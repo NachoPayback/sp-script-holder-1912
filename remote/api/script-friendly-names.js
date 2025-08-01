@@ -13,7 +13,7 @@ export default async function handler(req, res) {
       
       let query = supabase
         .from('script_friendly_names')
-        .select('script_name, friendly_name, description');
+        .select('script_name, friendly_name, description, image_url');
       
       if (script_names) {
         const scriptList = script_names.split(',');
@@ -31,7 +31,8 @@ export default async function handler(req, res) {
       data?.forEach(item => {
         friendlyNames[item.script_name] = {
           friendly_name: item.friendly_name,
-          description: item.description
+          description: item.description,
+          image_url: item.image_url
         };
       });
       
@@ -43,7 +44,7 @@ export default async function handler(req, res) {
       
     } else if (req.method === 'POST') {
       // Add or update friendly name
-      const { script_name, friendly_name, description } = req.body;
+      const { script_name, friendly_name, description, image_url } = req.body;
       
       if (!script_name || !friendly_name) {
         return res.status(400).json({
@@ -57,7 +58,8 @@ export default async function handler(req, res) {
         .upsert({
           script_name,
           friendly_name,
-          description: description || null
+          description: description || null,
+          image_url: image_url || null
         })
         .select();
       

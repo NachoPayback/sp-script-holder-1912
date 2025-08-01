@@ -41,7 +41,8 @@ export const useHub = () => {
     discoverHubs: hubService.discoverHubs.bind(hubService),
     connectToHub: hubService.connectToHub.bind(hubService),
     executeScript: hubService.executeScript.bind(hubService),
-    backToHubs: hubService.backToHubs.bind(hubService)
+    backToHubs: hubService.backToHubs.bind(hubService),
+    reloadFriendlyNames: hubService.reloadFriendlyNames.bind(hubService)
   };
 };
 

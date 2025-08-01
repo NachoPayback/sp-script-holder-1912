@@ -6,6 +6,7 @@ interface HexagonButtonProps {
   scriptName: string;
   color: string;
   friendlyName?: string;
+  imageUrl?: string;
   showName?: boolean;
   onClick: () => void;
   className?: string;
@@ -36,44 +37,78 @@ const HexagonSVG = styled.svg`
 `;
 
 const HexagonPath = styled.path<{ $color: string }>`
-  fill: url(#gradient-${props => props.$color.replace('#', '')});
-  stroke: ${props => props.$color};
+  fill: ${theme.colors.surface};
+  stroke: ${theme.colors.primary};
   stroke-width: ${theme.button.borderWidth};
-  filter: drop-shadow(0 0 20px ${props => props.$color}33);
-  transition: filter ${theme.animations.normal} ${theme.animations.easing};
+  filter: drop-shadow(0 0 15px ${theme.colors.glow});
+  transition: all ${theme.animations.normal} ${theme.animations.easing};
   
   ${ButtonContainer}:hover & {
-    filter: drop-shadow(0 0 40px ${props => props.$color}66);
+    fill: ${theme.colors.surfaceLight};
+    stroke: ${theme.colors.primaryLight};
+    filter: drop-shadow(0 0 25px ${theme.colors.glowStrong});
+    stroke-width: 3;
   }
 `;
 
-const TextContainer = styled.div<{ $color: string }>`
+const TextContainer = styled.div`
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   text-align: center;
-  color: ${props => props.$color};
+  color: ${theme.colors.primary};
   pointer-events: none;
   z-index: 10;
+  transition: all ${theme.animations.fast} ${theme.animations.easing};
+  
+  ${ButtonContainer}:hover & {
+    color: ${theme.colors.primaryLight};
+    transform: translate(-50%, -50%) scale(1.05);
+  }
 `;
 
 const ExecuteText = styled.div`
   font-size: 1.1rem;
-  font-weight: ${theme.fonts.weights.bold};
+  font-weight: ${theme.fonts.weights.extraBold};
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.15em;
   font-family: ${theme.fonts.family};
+  text-shadow: 0 0 10px currentColor;
 `;
 
 const ScriptName = styled.div`
-  font-size: 0.75rem;
-  font-weight: ${theme.fonts.weights.medium};
+  font-size: 0.7rem;
+  font-weight: ${theme.fonts.weights.semibold};
   margin-top: ${theme.spacing.sm};
-  opacity: 0.9;
+  opacity: 0.8;
   max-width: 140px;
   line-height: 1.2;
-  font-family: ${theme.fonts.family};
+  font-family: ${theme.fonts.mono};
+  letter-spacing: 0.05em;
+`;
+
+const ImageContainer = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 5;
+`;
+
+const HexagonImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  clip-path: polygon(30% 0%, 70% 0%, 100% 50%, 70% 100%, 30% 100%, 0% 50%);
+  filter: brightness(0.9) contrast(1.1);
+  transition: filter ${theme.animations.fast} ${theme.animations.easing};
+  
+  ${ButtonContainer}:hover & {
+    filter: brightness(1.1) contrast(1.2);
+  }
 `;
 
 // Your custom hexagon path from the SVG
@@ -83,6 +118,7 @@ export const HexagonButton: React.FC<HexagonButtonProps> = ({
   scriptName,
   color,
   friendlyName,
+  imageUrl,
   showName = false,
   onClick,
   className
@@ -94,10 +130,11 @@ export const HexagonButton: React.FC<HexagonButtonProps> = ({
     <ButtonContainer onClick={onClick} className={className}>
       <HexagonSVG viewBox="0 0 752.44 682.42">
         <defs>
-          <radialGradient id={gradientId} cx="30%" cy="30%">
-            <stop offset="0%" stopColor="rgba(255, 255, 255, 0.1)" />
-            <stop offset="50%" stopColor="transparent" />
-          </radialGradient>
+          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={theme.colors.primary} stopOpacity="0.2" />
+            <stop offset="50%" stopColor={theme.colors.primaryLight} stopOpacity="0.1" />
+            <stop offset="100%" stopColor={theme.colors.primary} stopOpacity="0.2" />
+          </linearGradient>
         </defs>
         <HexagonPath 
           d={HEXAGON_PATH} 
@@ -105,12 +142,19 @@ export const HexagonButton: React.FC<HexagonButtonProps> = ({
         />
       </HexagonSVG>
       
-      <TextContainer $color={color}>
-        <ExecuteText>EXECUTE</ExecuteText>
-        {showName && (
-          <ScriptName>{displayName.toUpperCase()}</ScriptName>
-        )}
-      </TextContainer>
+      {/* Show image if provided, otherwise show text */}
+      {imageUrl ? (
+        <ImageContainer>
+          <HexagonImage src={imageUrl} alt={displayName} />
+        </ImageContainer>
+      ) : (
+        <TextContainer>
+          <ExecuteText>EXECUTE</ExecuteText>
+          {showName && (
+            <ScriptName>{displayName.toUpperCase()}</ScriptName>
+          )}
+        </TextContainer>
+      )}
     </ButtonContainer>
   );
 };
