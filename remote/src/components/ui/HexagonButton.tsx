@@ -7,17 +7,45 @@ interface HexagonButtonProps {
   color: string;
   friendlyName?: string;
   imageUrl?: string;
+  imagePositionX?: number; // -50 to 50
+  imagePositionY?: number; // -50 to 50
   showName?: boolean;
   onClick: () => void;
   className?: string;
+  isEditMode?: boolean;
 }
 
-const ButtonContainer = styled.div`
+const ButtonContainer = styled.div<{ $isEditMode?: boolean }>`
   position: relative;
   width: ${theme.button.size}px;
   height: ${theme.button.size}px;
   cursor: pointer;
   transition: all ${theme.animations.normal} ${theme.animations.easing};
+  
+  ${props => props.$isEditMode && `
+    &::after {
+      content: '✏️';
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      width: 32px;
+      height: 32px;
+      background: ${theme.colors.primary};
+      border: 2px solid ${theme.colors.text};
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      z-index: 100;
+      animation: editModePulse 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes editModePulse {
+      0%, 100% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.1); opacity: 1; }
+    }
+  `}
   
   &:hover {
     transform: scale(1.08);
@@ -34,36 +62,39 @@ const HexagonSVG = styled.svg`
   left: 0;
   width: 100%;
   height: 100%;
+  overflow: visible;
 `;
 
 const HexagonPath = styled.path<{ $color: string }>`
   fill: ${theme.colors.surface};
-  stroke: ${theme.colors.primary};
-  stroke-width: ${theme.button.borderWidth};
-  filter: drop-shadow(0 0 15px ${theme.colors.glow});
+  stroke: ${props => props.$color};
+  stroke-width: 16;
+  filter: 
+    drop-shadow(0 0 20px ${props => props.$color}) 
+    drop-shadow(0 0 40px ${props => props.$color}60);
   transition: all ${theme.animations.normal} ${theme.animations.easing};
   
   ${ButtonContainer}:hover & {
     fill: ${theme.colors.surfaceLight};
-    stroke: ${theme.colors.primaryLight};
-    filter: drop-shadow(0 0 25px ${theme.colors.glowStrong});
-    stroke-width: 3;
+    stroke-width: 20;
+    filter: 
+      drop-shadow(0 0 30px ${props => props.$color}) 
+      drop-shadow(0 0 60px ${props => props.$color}80);
   }
 `;
 
-const TextContainer = styled.div`
+const TextContainer = styled.div<{ $color: string }>`
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   text-align: center;
-  color: ${theme.colors.primary};
+  color: ${props => props.$color};
   pointer-events: none;
   z-index: 10;
   transition: all ${theme.animations.fast} ${theme.animations.easing};
   
   ${ButtonContainer}:hover & {
-    color: ${theme.colors.primaryLight};
     transform: translate(-50%, -50%) scale(1.05);
   }
 `;
@@ -98,16 +129,23 @@ const ImageContainer = styled.div`
   z-index: 5;
 `;
 
-const HexagonImage = styled.img`
+const HexagonImage = styled.img<{ $color: string; $positionX: number; $positionY: number }>`
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: ${props => `${50 + props.$positionX}% ${50 + props.$positionY}%`};
   clip-path: polygon(30% 0%, 70% 0%, 100% 50%, 70% 100%, 30% 100%, 0% 50%);
-  filter: brightness(0.9) contrast(1.1);
-  transition: filter ${theme.animations.fast} ${theme.animations.easing};
+  /* No color mapping - user colors their own icons */
+  filter: 
+    drop-shadow(0 0 10px ${props => props.$color}60)
+    drop-shadow(0 0 20px ${props => props.$color}40);
+  transition: all ${theme.animations.fast} ${theme.animations.easing};
   
   ${ButtonContainer}:hover & {
-    filter: brightness(1.1) contrast(1.2);
+    filter: 
+      drop-shadow(0 0 15px ${props => props.$color}80)
+      drop-shadow(0 0 30px ${props => props.$color}60)
+      brightness(1.1);
   }
 `;
 
@@ -119,16 +157,19 @@ export const HexagonButton: React.FC<HexagonButtonProps> = ({
   color,
   friendlyName,
   imageUrl,
+  imagePositionX = 0,
+  imagePositionY = 0,
   showName = false,
   onClick,
-  className
+  className,
+  isEditMode = false
 }) => {
   const gradientId = `gradient-${color.replace('#', '')}`;
   const displayName = friendlyName || scriptName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
   return (
-    <ButtonContainer onClick={onClick} className={className}>
-      <HexagonSVG viewBox="0 0 752.44 682.42">
+    <ButtonContainer onClick={onClick} className={className} $isEditMode={isEditMode}>
+      <HexagonSVG viewBox="-20 -20 792.44 722.42">
         <defs>
           <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor={theme.colors.primary} stopOpacity="0.2" />
@@ -145,10 +186,16 @@ export const HexagonButton: React.FC<HexagonButtonProps> = ({
       {/* Show image if provided, otherwise show text */}
       {imageUrl ? (
         <ImageContainer>
-          <HexagonImage src={imageUrl} alt={displayName} />
+          <HexagonImage 
+            src={imageUrl} 
+            alt={displayName} 
+            $color={color}
+            $positionX={imagePositionX}
+            $positionY={imagePositionY}
+          />
         </ImageContainer>
       ) : (
-        <TextContainer>
+        <TextContainer $color={color}>
           <ExecuteText>EXECUTE</ExecuteText>
           {showName && (
             <ScriptName>{displayName.toUpperCase()}</ScriptName>

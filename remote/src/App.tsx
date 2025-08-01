@@ -3,10 +3,12 @@ import styled, { ThemeProvider } from 'styled-components';
 import { LoginForm } from './components/auth/LoginForm';
 import { ScriptGrid } from './components/ui/ScriptGrid';
 import { ActivityFeed } from './components/ui/ActivityFeed';
+import { SettingsModal } from './components/ui/SettingsModal';
 import { useAuth } from './hooks/useAuth';
 import { useRealtime } from './hooks/useRealtime';
 import { theme } from './styles/theme';
 import { hubApi, assignmentApi, scriptApi } from './services/api';
+import { isCurrentUserAdmin } from './utils/admin';
 import type { Hub, HubScript, Assignment } from './types/Hub';
 
 const AppContainer = styled.div`
@@ -196,6 +198,52 @@ const BackButton = styled.button`
   }
 `;
 
+const EditModeToggle = styled.button<{ $isActive: boolean }>`
+  background: ${props => props.$isActive ? theme.colors.primary : theme.colors.surface};
+  color: ${props => props.$isActive ? theme.colors.text : theme.colors.textSecondary};
+  border: 2px solid ${props => props.$isActive ? theme.colors.primary : theme.colors.borderLight};
+  padding: 8px 16px;
+  border-radius: ${theme.borderRadius.md};
+  cursor: pointer;
+  font-family: ${theme.fonts.family};
+  font-weight: ${theme.fonts.weights.bold};
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all ${theme.animations.fast} ${theme.animations.easing};
+  
+  &:hover {
+    background: ${props => props.$isActive ? theme.colors.primaryLight : theme.colors.surfaceLight};
+    border-color: ${theme.colors.primary};
+    color: ${theme.colors.primary};
+    transform: translateY(-2px);
+  }
+  
+  ${props => props.$isActive && `
+    box-shadow: ${theme.shadows.glow};
+  `}
+`;
+
+const SettingsButton = styled.button`
+  background: ${theme.colors.surface};
+  color: ${theme.colors.textSecondary};
+  border: 2px solid ${theme.colors.borderLight};
+  padding: 8px 16px;
+  border-radius: ${theme.borderRadius.md};
+  cursor: pointer;
+  font-family: ${theme.fonts.family};
+  font-weight: ${theme.fonts.weights.bold};
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all ${theme.animations.fast} ${theme.animations.easing};
+  
+  &:hover {
+    background: ${theme.colors.surfaceLight};
+    border-color: ${theme.colors.primary};
+    color: ${theme.colors.primary};
+    transform: translateY(-2px);
+  }
+`;
+
 const SectionTitle = styled.h2`
   font-size: 1.2rem;
   font-weight: ${theme.fonts.weights.bold};
@@ -221,6 +269,9 @@ function App() {
   const [friendlyNames, setFriendlyNames] = useState<Record<string, { friendly_name: string }>>({});
   const [activity, setActivity] = useState<any[]>([]);
   const [connectedUsers, setConnectedUsers] = useState<any[]>([]);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [selectedScriptForEdit, setSelectedScriptForEdit] = useState<string | null>(null);
   
   const { scriptCommands } = useRealtime(selectedHub?.id || '');
 
@@ -279,6 +330,14 @@ function App() {
 
   const handleScriptExecute = async (scriptName: string) => {
     if (!selectedHub || !user) return;
+
+    // Check if we're in edit mode and user is admin
+    if (isEditMode && isCurrentUserAdmin()) {
+      // Open customization for this specific script
+      setSelectedScriptForEdit(scriptName);
+      setSettingsModalOpen(true);
+      return;
+    }
 
     try {
       await scriptApi.execute(selectedHub.id, scriptName, user.username);
@@ -368,6 +427,27 @@ function App() {
     }
   };
 
+  const handleFriendlyNamesUpdate = async () => {
+    if (!selectedHub) return;
+    const scriptNames = scripts.map(s => 
+      typeof s === 'string' ? s : s.script_name
+    );
+    const response = await hubApi.getFriendlyNames(scriptNames);
+    if (response.success) {
+      setFriendlyNames(response.friendly_names);
+    }
+  };
+
+  const handleHubSettingsUpdate = async (mode: 'shared' | 'assigned', showNames: boolean, enableTimer: boolean, timerMinutes: number) => {
+    // This would normally update hub settings via API
+    console.log('Hub settings update:', { mode, showNames, enableTimer, timerMinutes });
+  };
+
+  const handleShuffleScripts = () => {
+    // This would normally shuffle script assignments via API
+    console.log('Shuffle scripts requested');
+  };
+
   if (!user) {
     return (
       <ThemeProvider theme={theme}>
@@ -438,8 +518,38 @@ function App() {
                 <BackHeader>
                   <BackButton onClick={handleBackToHubs}>← BACK</BackButton>
                   <h2>{selectedHub?.friendly_name}</h2>
-                  <button>⚙ SETTINGS</button>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    {/* Edit mode toggle - only show for admin */}
+                    {isCurrentUserAdmin() && (
+                      <EditModeToggle 
+                        $isActive={isEditMode}
+                        onClick={() => setIsEditMode(!isEditMode)}
+                        title={isEditMode ? 'Exit edit mode' : 'Enter edit mode - click buttons to customize them'}
+                      >
+                        {isEditMode ? '✏️ EXIT EDIT' : '✏️ EDIT MODE'}
+                      </EditModeToggle>
+                    )}
+                    <SettingsButton onClick={() => {
+                      setSelectedScriptForEdit(null);
+                      setSettingsModalOpen(true);
+                    }}>⚙ SETTINGS</SettingsButton>
+                  </div>
                 </BackHeader>
+                {isEditMode && isCurrentUserAdmin() && (
+                  <div style={{
+                    padding: '12px 16px',
+                    margin: '0 0 20px 0',
+                    background: 'rgba(59, 130, 246, 0.1)',
+                    border: `1px solid ${theme.colors.primary}40`,
+                    borderRadius: theme.borderRadius.md,
+                    color: theme.colors.primary,
+                    textAlign: 'center',
+                    fontSize: '0.9rem',
+                    fontWeight: theme.fonts.weights.semibold
+                  }}>
+                    🎨 <strong>Edit Mode Active:</strong> Click any button to customize its appearance, colors, and position
+                  </div>
+                )}
                 <ScriptGrid
                   scripts={scripts}
                   assignment={assignment || undefined}
@@ -447,6 +557,7 @@ function App() {
                   showScriptNames={selectedHub?.show_script_names || false}
                   friendlyNames={friendlyNames}
                   onScriptExecute={handleScriptExecute}
+                  isEditMode={isEditMode}
                 />
               </ScriptsContainer>
             )}
@@ -470,6 +581,22 @@ function App() {
             </div>
           </Sidebar>
         </MainContent>
+        
+        <SettingsModal
+          isOpen={settingsModalOpen}
+          onClose={() => {
+            setSettingsModalOpen(false);
+            setSelectedScriptForEdit(null);
+          }}
+          scripts={scripts}
+          friendlyNames={friendlyNames}
+          hubMode={selectedHub?.mode || 'shared'}
+          showScriptNames={selectedHub?.show_script_names || false}
+          onFriendlyNamesUpdate={handleFriendlyNamesUpdate}
+          onHubSettingsUpdate={handleHubSettingsUpdate}
+          onShuffleScripts={handleShuffleScripts}
+          selectedScript={selectedScriptForEdit}
+        />
       </AppContainer>
     </ThemeProvider>
   );

@@ -1,59 +1,60 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { theme } from '../../styles/theme';
-import { authService } from '../../services/AuthService';
+import { isCurrentUserAdmin } from '../../utils/admin';
 import type { HubScript } from '../../types/Hub';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   scripts: HubScript[];
-  friendlyNames: Record<string, { friendly_name: string; image_url?: string }>;
+  friendlyNames: Record<string, { friendly_name: string; image_url?: string; custom_color?: string; position_x?: number; position_y?: number }>;
   hubMode: 'shared' | 'assigned';
   showScriptNames: boolean;
   onFriendlyNamesUpdate: () => void;
   onHubSettingsUpdate: (mode: 'shared' | 'assigned', showNames: boolean, enableTimer: boolean, timerMinutes: number) => void;
   onShuffleScripts: () => void;
+  selectedScript?: string | null;
 }
 
 const ModalOverlay = styled.div<{ $isOpen: boolean }>`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.8) !important;
   backdrop-filter: blur(8px);
-  display: ${props => props.$isOpen ? 'flex' : 'none'};
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
+  display: ${props => props.$isOpen ? 'flex' : 'none'} !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 999999 !important;
+  pointer-events: ${props => props.$isOpen ? 'auto' : 'none'} !important;
 `;
 
 const ModalContainer = styled.div`
-  background: ${theme.colors.surface};
-  border: 2px solid ${theme.colors.primary};
-  border-radius: ${theme.borderRadius.xl};
-  padding: ${theme.spacing.xxl};
-  max-width: 650px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-  backdrop-filter: blur(20px);
-  box-shadow: ${theme.shadows.lg}, ${theme.shadows.glow};
-  position: relative;
+  background: ${theme.colors.surface} !important;
+  border: 2px solid ${theme.colors.primary} !important;
+  border-radius: ${theme.borderRadius.xl} !important;
+  padding: ${theme.spacing.xxl} !important;
+  max-width: 650px !important;
+  width: 90% !important;
+  max-height: 80vh !important;
+  overflow-y: auto !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: ${theme.shadows.lg}, ${theme.shadows.glow} !important;
+  position: relative !important;
+  margin: 0 !important;
+  transform: none !important;
+  z-index: 1000000 !important;
   
-  /* Tech corner accent */
-  &::before {
-    content: '';
-    position: absolute;
-    top: -2px;
-    right: -2px;
-    width: 80px;
-    height: 80px;
-    background: ${theme.gradients.electric};
-    clip-path: polygon(30% 0%, 100% 0%, 100% 70%, 70% 100%, 0% 100%, 0% 30%);
-    opacity: 0.3;
+  /* Force centered modal on all screen sizes */
+  @media (max-width: ${theme.breakpoints.mobile}) {
+    width: 95% !important;
+    max-height: 90vh !important;
   }
 `;
 
@@ -288,10 +289,10 @@ const RefreshButton = styled.button`
 
 const ScriptItem = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
-  padding: 16px;
-  margin: 8px 0;
+  padding: 12px;
+  margin: 6px 0;
   background: rgba(30, 41, 59, 0.3);
   border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 8px;
@@ -376,6 +377,154 @@ const EmptyState = styled.div`
   font-size: 1.1rem;
 `;
 
+const ImageDropZone = styled.div<{ $isDragging: boolean }>`
+  border: 2px dashed ${props => props.$isDragging ? theme.colors.primary : theme.colors.borderLight};
+  border-radius: ${theme.borderRadius.md};
+  padding: ${theme.spacing.md};
+  margin: ${theme.spacing.xs} 0;
+  text-align: center;
+  cursor: pointer;
+  transition: all ${theme.animations.fast} ${theme.animations.easing};
+  background: ${props => props.$isDragging ? theme.colors.primary + '10' : 'transparent'};
+  
+  &:hover {
+    border-color: ${theme.colors.primary};
+    background: ${theme.colors.primary}05;
+  }
+  
+  p {
+    margin: 0;
+    color: ${theme.colors.textSecondary};
+    font-size: 0.8rem;
+    line-height: 1.2;
+  }
+  
+  .upload-icon {
+    font-size: 1.5rem;
+    margin-bottom: ${theme.spacing.xs};
+    opacity: 0.6;
+  }
+`;
+
+const HiddenFileInput = styled.input`
+  display: none;
+`;
+
+const ColorInput = styled.input`
+  width: 40px;
+  height: 40px;
+  border: 2px solid ${theme.colors.borderLight};
+  border-radius: ${theme.borderRadius.md};
+  cursor: pointer;
+  background: transparent;
+  
+  &::-webkit-color-swatch-wrapper {
+    padding: 0;
+  }
+  
+  &::-webkit-color-swatch {
+    border: none;
+    border-radius: ${theme.borderRadius.sm};
+  }
+  
+  &:hover {
+    border-color: ${theme.colors.primary};
+  }
+`;
+
+const PositionSlider = styled.input`
+  width: 100px;
+  height: 4px;
+  border-radius: 2px;
+  background: ${theme.colors.surface};
+  outline: none;
+  cursor: pointer;
+  
+  &::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: ${theme.colors.primary};
+    cursor: pointer;
+    border: 2px solid ${theme.colors.text};
+  }
+  
+  &::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: ${theme.colors.primary};
+    cursor: pointer;
+    border: 2px solid ${theme.colors.text};
+  }
+`;
+
+const SliderGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+`;
+
+const SliderLabel = styled.span`
+  font-size: 0.7rem;
+  color: ${theme.colors.textSecondary};
+  text-align: center;
+`;
+
+const PreviewContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(20, 20, 20, 0.5);
+  border-radius: ${theme.borderRadius.md};
+  border: 1px solid ${theme.colors.borderLight};
+`;
+
+const PreviewButton = styled.div<{ $color: string }>`
+  position: relative;
+  width: 80px;
+  height: 80px;
+  cursor: default;
+`;
+
+const PreviewHexagonSVG = styled.svg<{ $color: string }>`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  
+  path {
+    fill: ${theme.colors.surface};
+    stroke: ${props => props.$color};
+    stroke-width: 6;
+    filter: drop-shadow(0 0 8px ${props => props.$color}60);
+  }
+`;
+
+const PreviewImage = styled.img<{ $color: string; $positionX: number; $positionY: number }>`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: ${props => `${50 + props.$positionX}% ${50 + props.$positionY}%`};
+  clip-path: polygon(30% 0%, 70% 0%, 100% 50%, 70% 100%, 30% 100%, 0% 50%);
+  filter: 
+    drop-shadow(0 0 4px ${props => props.$color}60)
+    drop-shadow(0 0 8px ${props => props.$color}40);
+`;
+
+const PreviewText = styled.div`
+  font-size: 0.8rem;
+  color: ${theme.colors.textSecondary};
+  line-height: 1.3;
+`;
+
 export function SettingsModal({ 
   isOpen, 
   onClose, 
@@ -385,20 +534,26 @@ export function SettingsModal({
   showScriptNames,
   onFriendlyNamesUpdate,
   onHubSettingsUpdate,
-  onShuffleScripts
+  onShuffleScripts,
+  selectedScript
 }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<'hub' | 'names'>('hub');
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
   const [imageValues, setImageValues] = useState<Record<string, string>>({});
+  const [colorValues, setColorValues] = useState<Record<string, string>>({});
+  const [positionXValues, setPositionXValues] = useState<Record<string, number>>({});
+  const [positionYValues, setPositionYValues] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [tempMode, setTempMode] = useState<'shared' | 'assigned'>(hubMode);
   const [tempShowNames, setTempShowNames] = useState(showScriptNames);
   const [tempEnableTimer, setTempEnableTimer] = useState(false);
   const [tempTimerMinutes, setTempTimerMinutes] = useState(5);
+  const [draggedScript, setDraggedScript] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   
   // Check if current user is admin
-  const currentUser = authService.getCurrentUser();
-  const isAdmin = currentUser?.username === 'NachoPayback';
+  const isAdmin = isCurrentUserAdmin();
 
   // Initialize values when modal opens
   useEffect(() => {
@@ -406,18 +561,33 @@ export function SettingsModal({
       // Initialize script name input values
       const values: Record<string, string> = {};
       const images: Record<string, string> = {};
+      const colors: Record<string, string> = {};
+      const positionsX: Record<string, number> = {};
+      const positionsY: Record<string, number> = {};
       scripts.forEach(script => {
         const scriptName = typeof script === 'string' ? script : script.script_name;
         values[scriptName] = friendlyNames[scriptName]?.friendly_name || '';
         images[scriptName] = friendlyNames[scriptName]?.image_url || '';
+        colors[scriptName] = friendlyNames[scriptName]?.custom_color || '';
+        positionsX[scriptName] = friendlyNames[scriptName]?.position_x || 0;
+        positionsY[scriptName] = friendlyNames[scriptName]?.position_y || 0;
       });
       setInputValues(values);
       setImageValues(images);
+      setColorValues(colors);
+      setPositionXValues(positionsX);
+      setPositionYValues(positionsY);
       
       // Initialize hub settings
       setTempMode(hubMode);
       setTempShowNames(showScriptNames);
-      setActiveTab(isAdmin ? 'hub' : 'names'); // Default to hub settings for admin, names for non-admin
+      
+      // If a specific script is selected (edit mode), go directly to names tab
+      if (selectedScript) {
+        setActiveTab('names');
+      } else {
+        setActiveTab(isAdmin ? 'hub' : 'names'); // Default to hub settings for admin, names for non-admin
+      }
     }
   }, [isOpen, scripts, friendlyNames, hubMode, showScriptNames, isAdmin]);
 
@@ -435,11 +605,80 @@ export function SettingsModal({
     }));
   };
 
+  const handleColorChange = (scriptName: string, value: string) => {
+    setColorValues(prev => ({
+      ...prev,
+      [scriptName]: value
+    }));
+  };
+
+  const convertToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  const handleImageUpload = async (scriptName: string, file: File) => {
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) { // 2MB limit
+      alert('Image size must be less than 2MB');
+      return;
+    }
+
+    try {
+      const base64 = await convertToBase64(file);
+      handleImageChange(scriptName, base64);
+    } catch (error) {
+      console.error('Error converting image:', error);
+      alert('Failed to process image');
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent, scriptName: string) => {
+    e.preventDefault();
+    setDraggedScript(scriptName);
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    setDraggedScript(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, scriptName: string) => {
+    e.preventDefault();
+    setIsDragging(false);
+    setDraggedScript(null);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      await handleImageUpload(scriptName, files[0]);
+    }
+  };
+
+  const handleFileSelect = async (scriptName: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      await handleImageUpload(scriptName, files[0]);
+    }
+  };
+
   const handleSave = async (scriptName: string) => {
     const friendlyName = inputValues[scriptName]?.trim();
     const imageUrl = imageValues[scriptName]?.trim();
+    const customColor = colorValues[scriptName]?.trim();
+    const positionX = positionXValues[scriptName] || 0;
+    const positionY = positionYValues[scriptName] || 0;
     
-    if (!friendlyName && !imageUrl) {
+    if (!friendlyName && !imageUrl && !customColor && positionX === 0 && positionY === 0) {
       // Need at least one value
       return;
     }
@@ -453,7 +692,10 @@ export function SettingsModal({
         body: JSON.stringify({
           script_name: scriptName,
           friendly_name: friendlyName || scriptName, // Fallback to script name if empty
-          image_url: imageUrl || null
+          image_url: imageUrl || null,
+          custom_color: customColor || null,
+          position_x: positionX,
+          position_y: positionY
         })
       });
 
@@ -469,6 +711,18 @@ export function SettingsModal({
         setImageValues(prev => ({
           ...prev,
           [scriptName]: imageUrl || ''
+        }));
+        setColorValues(prev => ({
+          ...prev,
+          [scriptName]: customColor || ''
+        }));
+        setPositionXValues(prev => ({
+          ...prev,
+          [scriptName]: positionX
+        }));
+        setPositionYValues(prev => ({
+          ...prev,
+          [scriptName]: positionY
         }));
         // Show success feedback
         console.log(`✅ Saved settings for ${scriptName}: name="${friendlyName}" image="${imageUrl}"`);
@@ -495,6 +749,9 @@ export function SettingsModal({
       if (data.success) {
         setInputValues(prev => ({ ...prev, [scriptName]: '' }));
         setImageValues(prev => ({ ...prev, [scriptName]: '' }));
+        setColorValues(prev => ({ ...prev, [scriptName]: '' }));
+        setPositionXValues(prev => ({ ...prev, [scriptName]: 0 }));
+        setPositionYValues(prev => ({ ...prev, [scriptName]: 0 }));
         onFriendlyNamesUpdate();
       }
     } catch (error) {
@@ -519,7 +776,7 @@ export function SettingsModal({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <ModalOverlay $isOpen={isOpen} onClick={onClose}>
       <ModalContainer onClick={e => e.stopPropagation()}>
         <ModalHeader>
@@ -623,28 +880,78 @@ export function SettingsModal({
         {/* Script Names Tab - available to all but restricted based on admin status */}
         {((isAdmin && activeTab === 'names') || !isAdmin) && (
           <>
-            {!isAdmin && (
+            {!isAdmin && !selectedScript && (
               <div style={{ marginBottom: '16px', padding: '12px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px', color: '#94a3b8' }}>
                 <strong>Note:</strong> Only administrators can modify hub settings. You can view script names here.
+              </div>
+            )}
+            
+            {selectedScript && (
+              <div style={{ 
+                marginBottom: '16px', 
+                padding: '12px', 
+                background: theme.colors.primary + '20', 
+                borderRadius: '8px', 
+                border: `1px solid ${theme.colors.primary}40`,
+                color: theme.colors.primary 
+              }}>
+                <strong>🎨 Editing: {selectedScript}</strong><br />
+                <span style={{ fontSize: '0.85rem', opacity: 0.8 }}>Make your changes below and click SAVE to apply them.</span>
               </div>
             )}
             
             <RefreshButton onClick={onFriendlyNamesUpdate}>
               🔄 Refresh Script Names
             </RefreshButton>
+            
+            {isAdmin && (
+              <div style={{ 
+                marginBottom: '16px', 
+                padding: '12px', 
+                background: theme.colors.surfaceLight, 
+                borderRadius: '8px', 
+                border: `1px solid ${theme.colors.borderLight}`,
+                color: theme.colors.textSecondary 
+              }}>
+                <strong style={{ color: theme.colors.primary }}>🚀 Ultra-Easy Image Upload:</strong>
+                <br />• Just <strong>drag & drop</strong> your image onto the upload zone below
+                <br />• Or <strong>click</strong> the upload zone to select a file
+                <br />• Recommended size: 400x400px for best hexagon fit
+                <br />• Images completely replace button text when set
+                <br />• <em>No URLs needed - works instantly!</em>
+              </div>
+            )}
 
             {scripts.length === 0 ? (
               <EmptyState>No scripts found</EmptyState>
             ) : (
-              scripts.map(script => {
+              scripts
+                .filter(script => {
+                  // If a specific script is selected, only show that one
+                  if (selectedScript) {
+                    const scriptName = typeof script === 'string' ? script : script.script_name;
+                    return scriptName === selectedScript;
+                  }
+                  return true;
+                })
+                .map(script => {
                 const scriptName = typeof script === 'string' ? script : script.script_name;
                 const currentFriendlyName = friendlyNames[scriptName]?.friendly_name || '';
                 const isSaving = saving[scriptName];
+                const isHighlighted = selectedScript === scriptName;
                 
                 return (
-                  <ScriptItem key={scriptName}>
+                  <ScriptItem key={scriptName} style={{
+                    ...(isHighlighted && {
+                      border: `2px solid ${theme.colors.primary}`,
+                      background: theme.colors.primary + '10',
+                      boxShadow: `0 0 20px ${theme.colors.primary}40`
+                    })
+                  }}>
                     <ScriptInfo>
-                      <ScriptName>{scriptName}</ScriptName>
+                      <ScriptName style={{
+                        ...(isHighlighted && { color: theme.colors.primary })
+                      }}>{scriptName}</ScriptName>
                       <AutoName>Auto: {getAutoName(scriptName)}</AutoName>
                       {friendlyNames[scriptName]?.image_url && (
                         <div style={{ fontSize: '0.7rem', color: '#10b981', marginTop: '4px' }}>
@@ -654,58 +961,116 @@ export function SettingsModal({
                     </ScriptInfo>
                     {isAdmin ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: '1' }}>
-                        <FriendlyInput
-                          type="text"
-                          value={inputValues[scriptName] || ''}
-                          onChange={e => handleInputChange(scriptName, e.target.value)}
-                          placeholder="Custom friendly name..."
-                          disabled={isSaving}
-                        />
-                        <FriendlyInput
-                          type="url"
-                          value={imageValues[scriptName] || ''}
-                          onChange={e => handleImageChange(scriptName, e.target.value)}
-                          placeholder="Image URL (replaces all text)..."
-                          disabled={isSaving}
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <FriendlyInput
+                            type="text"
+                            value={inputValues[scriptName] || ''}
+                            onChange={e => handleInputChange(scriptName, e.target.value)}
+                            placeholder="Custom friendly name..."
+                            disabled={isSaving}
+                            style={{ flex: 1 }}
+                          />
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                            <ColorInput
+                              type="color"
+                              value={colorValues[scriptName] || '#0080FF'}
+                              onChange={e => handleColorChange(scriptName, e.target.value)}
+                              disabled={isSaving}
+                              title="Custom button color"
+                            />
+                            <span style={{ fontSize: '0.7rem', color: theme.colors.textSecondary }}>Color</span>
+                          </div>
+                        </div>
+                        {imageValues[scriptName] && (
+                          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '8px' }}>
+                            <SliderGroup>
+                              <PositionSlider
+                                type="range"
+                                min="-50"
+                                max="50"
+                                value={positionXValues[scriptName] || 0}
+                                onChange={e => setPositionXValues(prev => ({ ...prev, [scriptName]: parseInt(e.target.value) }))}
+                                disabled={isSaving}
+                              />
+                              <SliderLabel>X Position</SliderLabel>
+                            </SliderGroup>
+                            <SliderGroup>
+                              <PositionSlider
+                                type="range"
+                                min="-50"
+                                max="50"
+                                value={positionYValues[scriptName] || 0}
+                                onChange={e => setPositionYValues(prev => ({ ...prev, [scriptName]: parseInt(e.target.value) }))}
+                                disabled={isSaving}
+                              />
+                              <SliderLabel>Y Position</SliderLabel>
+                            </SliderGroup>
+                          </div>
+                        )}
+                        <ImageDropZone
+                          $isDragging={isDragging && draggedScript === scriptName}
+                          onDragOver={e => handleDragOver(e, scriptName)}
+                          onDragLeave={handleDragLeave}
+                          onDrop={e => handleDrop(e, scriptName)}
+                          onClick={() => fileInputRefs.current[scriptName]?.click()}
+                        >
+                          <div className="upload-icon">📸</div>
+                          <p>
+                            {imageValues[scriptName] ? 'Click or drag to replace image' : 'Drag & drop image here or click to select'}
+                          </p>
+                          <p style={{ fontSize: '0.75rem', opacity: 0.7 }}>
+                            Max 2MB • PNG, JPG, GIF, WebP
+                          </p>
+                        </ImageDropZone>
+                        <HiddenFileInput
+                          ref={el => {
+                            fileInputRefs.current[scriptName] = el;
+                          }}
+                          type="file"
+                          accept=".png,.jpg,.jpeg,.gif,.webp,image/*"
+                          onChange={e => handleFileSelect(scriptName, e)}
                         />
                         {imageValues[scriptName] && (
-                          <div style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '12px',
-                            padding: '8px',
-                            background: 'rgba(30, 41, 59, 0.3)',
-                            borderRadius: '6px'
-                          }}>
-                            <img 
-                              src={imageValues[scriptName]} 
-                              alt="Preview"
-                              style={{ 
-                                width: '60px', 
-                                height: '60px', 
-                                objectFit: 'cover',
-                                borderRadius: '4px',
-                                border: '1px solid rgba(148, 163, 184, 0.2)'
-                              }}
-                              onError={e => {
-                                e.currentTarget.style.display = 'none';
-                              }}
-                            />
-                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                              Preview (hexagon crop will be applied on button)
-                            </div>
-                          </div>
+                          <PreviewContainer>
+                            <PreviewButton $color={colorValues[scriptName] || '#0080FF'}>
+                              <PreviewHexagonSVG 
+                                $color={colorValues[scriptName] || '#0080FF'}
+                                viewBox="-20 -20 792.44 722.42"
+                              >
+                                <path d="M245.57,681.92c-40.75,0-78.72-21.92-99.1-57.21L15.83,398.42c-20.37-35.29-20.37-79.14,0-114.43L146.48,57.71C166.85,22.42,204.82.5,245.57.5h261.29c40.75,0,78.72,21.92,99.1,57.21l130.65,226.29c20.37,35.29,20.37,79.14,0,114.43l-130.65,226.29c-20.38,35.29-58.35,57.21-99.1,57.21H245.57Z" />
+                              </PreviewHexagonSVG>
+                              <PreviewImage 
+                                src={imageValues[scriptName]} 
+                                alt="Preview"
+                                $color={colorValues[scriptName] || '#0080FF'}
+                                $positionX={positionXValues[scriptName] || 0}
+                                $positionY={positionYValues[scriptName] || 0}
+                                onError={e => {
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            </PreviewButton>
+                            <PreviewText>
+                              <strong>Live Preview</strong><br />
+                              This is exactly how your button will look.<br />
+                              Adjust sliders to reposition the image.
+                            </PreviewText>
+                          </PreviewContainer>
                         )}
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <SaveButton 
                             onClick={() => handleSave(scriptName)}
-                            disabled={isSaving || (!inputValues[scriptName]?.trim() && !imageValues[scriptName]?.trim())}
+                            disabled={isSaving || (!inputValues[scriptName]?.trim() && !imageValues[scriptName]?.trim() && !colorValues[scriptName]?.trim())}
                           >
                             {isSaving ? '...' : 'SAVE'}
                           </SaveButton>
                           {(currentFriendlyName || friendlyNames[scriptName]?.image_url) && (
                             <DeleteButton 
-                              onClick={() => handleDelete(scriptName)}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDelete(scriptName);
+                              }}
                               disabled={isSaving}
                             >
                               DELETE
@@ -734,6 +1099,7 @@ export function SettingsModal({
           </>
         )}
       </ModalContainer>
-    </ModalOverlay>
+    </ModalOverlay>,
+    document.body
   );
 }
