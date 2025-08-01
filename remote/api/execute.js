@@ -9,6 +9,12 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
+  // Validate environment variables
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+    return res.status(500).json({ 
+      error: 'Server configuration error: Missing Supabase credentials' 
+    });
+  }
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
