@@ -11,7 +11,7 @@ interface HubState {
   scripts: HubScript[];
   assignment: Assignment | null;
   friendlyNames: Record<string, { friendly_name: string }>;
-  connectedUsers: any[];
+  connectedUsers: { username?: string; user_id?: string }[];
   loading: boolean;
 }
 

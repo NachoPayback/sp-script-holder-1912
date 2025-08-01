@@ -52,7 +52,7 @@ export const useAuth = () => {
         setError(result.error || 'Login failed');
         return false;
       }
-    } catch (err) {
+    } catch {
       setError('Network error during login');
       return false;
     } finally {

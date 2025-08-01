@@ -90,7 +90,7 @@ class AuthService {
         });
         return false;
       }
-    } catch (error) {
+    } catch {
       this.setState({ 
         error: 'Network error during login',
         loading: false 

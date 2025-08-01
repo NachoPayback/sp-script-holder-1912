@@ -239,7 +239,7 @@ function AppWithServices() {
       await connectToHub(hub);
       setView('scripts');
       showSuccess(`Connected to ${hub.friendly_name}`);
-    } catch (error) {
+    } catch {
       showError(`Failed to connect to ${hub.friendly_name}`);
     }
   };
@@ -254,7 +254,7 @@ function AppWithServices() {
       addToActivityLog(`Executed ${scriptName}`, 'pending');
       await executeScript(scriptName);
       showSuccess(`Script ${scriptName} executed successfully`);
-    } catch (error) {
+    } catch {
       showError(`Failed to execute ${scriptName}`);
       addToActivityLog(`Failed to execute ${scriptName}`, 'error');
     }
@@ -350,7 +350,7 @@ function AppWithServices() {
             <div style={{ marginBottom: '24px' }}>
               <SectionTitle>Connected Users</SectionTitle>
               <div>
-                {connectedUsers.map((user: any, index) => (
+                {connectedUsers.map((user: { username?: string; user_id?: string }, index) => (
                   <div key={index} style={{ padding: '4px 0', color: '#94a3b8' }}>
                     {user.username || user.user_id}
                   </div>

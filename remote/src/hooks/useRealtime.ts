@@ -5,7 +5,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 export const useRealtime = (hubId: string) => {
   const channelRef = useRef<RealtimeChannel | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [scriptCommands, setScriptCommands] = useState<any[]>([]);
+  const [scriptCommands, setScriptCommands] = useState<{ id: string; command_id: string; status: string; result?: string }[]>([]);
 
   useEffect(() => {
     if (!hubId || hubId === '') return;
@@ -24,7 +24,7 @@ export const useRealtime = (hubId: string) => {
         filter: `hub_id=eq.${hubId}`
       },
       (payload) => {
-        const command = payload.new as any;
+        const command = payload.new as { id: string; command_id: string; status: string; result?: string };
         setScriptCommands(prev => [command, ...prev.slice(0, 49)]);
       }
     );
