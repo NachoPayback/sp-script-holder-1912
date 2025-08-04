@@ -58,7 +58,14 @@ $form = New-Object System.Windows.Forms.Form
 $form.Text = "{notif['app']}"
 $form.Size = New-Object System.Drawing.Size(400, 120)
 $form.StartPosition = "Manual"
-$form.Location = New-Object System.Drawing.Point(([System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea.Width - 400), 50)
+# Calculate random position ensuring entire window stays on screen
+$screenWidth = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea.Width
+$screenHeight = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea.Height
+$maxX = $screenWidth - 400  # Form width is 400
+$maxY = $screenHeight - 120  # Form height is 120
+$randomX = Get-Random -Minimum 0 -Maximum $maxX
+$randomY = Get-Random -Minimum 0 -Maximum $maxY
+$form.Location = New-Object System.Drawing.Point($randomX, $randomY)
 $form.TopMost = $true
 $form.ShowInTaskbar = $false
 $form.FormBorderStyle = "FixedDialog"

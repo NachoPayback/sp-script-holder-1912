@@ -27,5 +27,10 @@ export interface ScriptResult {
 export interface FriendlyName {
   script_name: string;
   friendly_name: string;
+  description?: string;
+  image_url?: string;
+  custom_color?: string;
+  position_x?: number;
+  position_y?: number;
   updated_at: string;
 }

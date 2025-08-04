@@ -29,11 +29,15 @@ The system uses Supabase for real-time messaging, user management, and data pers
 ### Hub Development
 ```bash
 # Run hub worker locally
-cd v2/hub
+cd hub
 python hub.py
 
-# Build portable executable
-python build_portable_hub.py
+# Build hub executable with uv (ALWAYS use uv build, NEVER use PyInstaller)
+cd hub
+uv build
+
+# Package hub for distribution
+uv build --python-preference system
 ```
 
 ### Remote Development & Deployment
@@ -123,9 +127,13 @@ Hubs register automatically using machine-specific identifiers:
 ## Deployment
 
 ### Hub Deployment
-- Use `build_portable_hub.py` to create standalone executable
-- Executable includes Python runtime + all dependencies (~80-120MB)
-- No Python installation required on target machines
+- **ALWAYS use `uv build`** to create hub packages (NEVER use PyInstaller)
+- Hub must be able to:
+  - Pull scripts from GitHub repository
+  - Dynamically install script dependencies using uv
+  - Execute any Python script with its specific dependencies
+- Use `uv` for dependency management and script execution
+- Hub should auto-update scripts from GitHub on startup
 
 ### Remote Deployment
 - **MANDATORY**: Deploy to Vercel using `vercel --prod` 

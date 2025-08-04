@@ -18,78 +18,115 @@ interface ActivityFeedProps {
 const ActivityContainer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${theme.spacing.sm};
+  gap: ${theme.spacing.md};
   flex: 1;
   overflow-y: auto;
-  min-height: 300px;
+  min-height: 0;
   height: 100%;
-  max-height: none;
   
-  /* Custom scrollbar */
+  /* Modern scrollbar */
   &::-webkit-scrollbar {
-    width: 8px;
+    width: 6px;
   }
   
   &::-webkit-scrollbar-track {
-    background: rgba(15, 23, 42, 0.8);
-    border-radius: 4px;
-    margin: 4px 0;
+    background: transparent;
   }
   
   &::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, rgba(59, 130, 246, 0.4) 0%, rgba(99, 102, 241, 0.4) 100%);
-    border-radius: 4px;
-    border: 1px solid rgba(148, 163, 184, 0.1);
-    transition: all 0.2s ease;
+    background: ${theme.colors.primary}60;
+    border-radius: 3px;
+    transition: all ${theme.animations.fast} ${theme.animations.easing};
   }
   
   &::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, rgba(59, 130, 246, 0.6) 0%, rgba(99, 102, 241, 0.6) 100%);
-    border-color: rgba(148, 163, 184, 0.3);
+    background: ${theme.colors.primary}80;
   }
 `;
 
 const ActivityItemElement = styled.div<{ $status: string }>`
-  padding: ${theme.spacing.sm} 12px;
-  background: rgba(30, 41, 59, 0.3);
-  border-radius: ${theme.spacing.sm};
-  border-left: 3px solid ${props => {
+  padding: ${theme.spacing.md};
+  background: linear-gradient(135deg, rgba(20, 20, 20, 0.8) 0%, rgba(15, 15, 15, 0.9) 100%);
+  border: 1px solid ${props => {
     switch (props.$status) {
-      case 'success': return theme.colors.success;
-      case 'error': return theme.colors.error;
-      default: return theme.colors.textSecondary;
+      case 'success': return theme.colors.success + '40';
+      case 'error': return theme.colors.error + '40';
+      default: return theme.colors.primary + '30';
     }
   }};
-  font-size: 0.8rem;
+  border-radius: ${theme.borderRadius.md};
+  font-size: 0.85rem;
   font-weight: ${theme.fonts.weights.normal};
-  color: #cbd5e1;
-  font-family: ${theme.fonts.family};
+  color: ${theme.colors.text};
+  font-family: ${theme.fonts.mono};
+  position: relative;
+  transition: all ${theme.animations.fast} ${theme.animations.easing};
+  backdrop-filter: blur(10px);
+  
+  /* Status indicator */
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: ${props => {
+      switch (props.$status) {
+        case 'success': return theme.colors.success;
+        case 'error': return theme.colors.error;
+        default: return theme.colors.primary;
+      }
+    }};
+    border-radius: 0 4px 4px 0;
+  }
+  
+  &:hover {
+    background: linear-gradient(135deg, rgba(25, 25, 25, 0.9) 0%, rgba(20, 20, 20, 1) 100%);
+    border-color: ${props => {
+      switch (props.$status) {
+        case 'success': return theme.colors.success + '60';
+        case 'error': return theme.colors.error + '60';
+        default: return theme.colors.primary + '50';
+      }
+    }};
+    transform: translateX(4px);
+  }
   
   ${props => props.$status === 'success' && `
-    background: rgba(16, 185, 129, 0.1);
+    box-shadow: 0 0 20px ${theme.colors.success}20;
   `}
   
   ${props => props.$status === 'error' && `
-    background: rgba(239, 68, 68, 0.1);
+    box-shadow: 0 0 20px ${theme.colors.error}20;
+  `}
+  
+  ${props => props.$status === 'pending' && `
+    box-shadow: 0 0 20px ${theme.colors.primary}20;
   `}
 `;
 
 const ActivityUser = styled.div`
-  font-weight: ${theme.fonts.weights.medium};
-  color: ${theme.colors.text};
+  font-weight: ${theme.fonts.weights.bold};
+  color: ${theme.colors.primary};
+  font-size: 0.9rem;
+  margin-bottom: ${theme.spacing.xs};
 `;
 
 const ActivityAction = styled.div`
-  margin: 2px 0;
+  margin: ${theme.spacing.xs} 0;
+  color: ${theme.colors.text};
+  line-height: 1.4;
 `;
 
 const ActivityTime = styled.div`
   display: flex;
   align-items: center;
-  gap: ${theme.spacing.xs};
-  font-size: 0.7rem;
+  justify-content: space-between;
+  font-size: 0.75rem;
   color: ${theme.colors.textSecondary};
-  margin-top: 2px;
+  margin-top: ${theme.spacing.xs};
+  font-family: ${theme.fonts.mono};
 `;
 
 const getStatusIcon = (status: string) => {

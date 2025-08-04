@@ -24,19 +24,20 @@ const ButtonContainer = styled.div<{ $isEditMode?: boolean }>`
   
   ${props => props.$isEditMode && `
     &::after {
-      content: '✏️';
+      content: 'EDIT';
       position: absolute;
-      top: -10px;
-      right: -10px;
-      width: 32px;
-      height: 32px;
+      top: -8px;
+      right: -8px;
+      padding: 4px 8px;
       background: ${theme.colors.primary};
       border: 2px solid ${theme.colors.text};
-      border-radius: 50%;
+      border-radius: 4px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
+      font-size: 10px;
+      font-weight: bold;
+      color: ${theme.colors.text};
       z-index: 100;
       animation: editModePulse 1.5s ease-in-out infinite;
     }
@@ -133,7 +134,7 @@ const HexagonImage = styled.img<{ $color: string; $positionX: number; $positionY
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: ${props => `${50 + props.$positionX}% ${50 + props.$positionY}%`};
+  object-position: ${props => `${50 - props.$positionX}% ${50 - props.$positionY}%`};
   clip-path: polygon(30% 0%, 70% 0%, 100% 50%, 70% 100%, 30% 100%, 0% 50%);
   /* No color mapping - user colors their own icons */
   filter: 

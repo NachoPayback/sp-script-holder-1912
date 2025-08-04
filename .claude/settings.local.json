@@ -108,7 +108,27 @@
       "WebFetch(domain:remote-vercel-nxni8rlog-nachopaybacks-projects.vercel.app)",
       "WebFetch(domain:remote-vercel-bgmhjqjc4-nachopaybacks-projects.vercel.app)",
       "WebFetch(domain:remote-35ski5d7l-nachopaybacks-projects.vercel.app)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(npx create-react-app:*)",
+      "Bash(npm create:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx playwright:*)",
+      "Bash(npm test)",
+      "WebFetch(domain:remote-vercel-l3v7carq7-nachopaybacks-projects.vercel.app)",
+      "Bash(git read-tree:*)",
+      "WebFetch(domain:localhost)",
+      "Bash(npm run lint)",
+      "Bash(npx tsc:*)",
+      "WebFetch(domain:vercel.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:remote-vercel-7zsc5vwc4-nachopaybacks-projects.vercel.app)",
+      "Bash(cat:*)",
+      "Bash(uv build:*)",
+      "Bash(copy:*)",
+      "Bash(start \"\" \"Explosion.webm\")",
+      "Bash(ffmpeg:*)"
     ],
     "deny": []
   }

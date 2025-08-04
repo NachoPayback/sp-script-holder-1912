@@ -14,11 +14,25 @@ const LoginContainer = styled.div`
   left: 0;
   width: 100%;
   height: 100%;
-  background: ${theme.colors.background};
+  background: linear-gradient(135deg, #0A0A0A 0%, #141414 50%, #0A0A0A 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  
+  /* Subtle tech pattern */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      radial-gradient(circle at 25% 25%, ${theme.colors.glow} 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, ${theme.colors.glow} 0%, transparent 50%);
+    opacity: 0.3;
+  }
 `;
 
 const LoginBox = styled.div`

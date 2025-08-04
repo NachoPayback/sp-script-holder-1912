@@ -17,12 +17,17 @@ export const authApi = {
     return response.json();
   },
 
-  verify: async (token: string): Promise<{ valid: boolean; user?: { username: string } }> => {
+  verify: async (token: string): Promise<{ valid: boolean; user?: { username: string; permissions?: { admin?: boolean; all_hubs?: boolean } } }> => {
     const response = await fetch(`${API_BASE}/api/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token })
     });
+    return response.json();
+  },
+
+  getUserPermissions: async (username: string): Promise<{ success: boolean; permissions?: { admin?: boolean; all_hubs?: boolean } }> => {
+    const response = await fetch(`${API_BASE}/api/user-permissions?username=${encodeURIComponent(username)}`);
     return response.json();
   }
 };
@@ -52,6 +57,23 @@ export const hubApi = {
       url += `?script_names=${scriptNames.join(',')}`;
     }
     const response = await fetch(url);
+    return response.json();
+  },
+
+  saveFriendlyName: async (scriptName: string, friendlyName: string, description?: string, imageUrl?: string, customColor?: string, positionX?: number, positionY?: number): Promise<{ success: boolean; message?: string }> => {
+    const response = await fetch(`${API_BASE}/api/script-friendly-names`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        script_name: scriptName, 
+        friendly_name: friendlyName,
+        description,
+        image_url: imageUrl,
+        custom_color: customColor,
+        position_x: positionX,
+        position_y: positionY
+      })
+    });
     return response.json();
   }
 };

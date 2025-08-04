@@ -13,7 +13,7 @@ export default async function handler(req, res) {
       
       let query = supabase
         .from('script_friendly_names')
-        .select('script_name, friendly_name, description, image_url');
+        .select('script_name, friendly_name, description, image_url, custom_color, position_x, position_y');
       
       if (script_names) {
         const scriptList = script_names.split(',');
@@ -32,7 +32,10 @@ export default async function handler(req, res) {
         friendlyNames[item.script_name] = {
           friendly_name: item.friendly_name,
           description: item.description,
-          image_url: item.image_url
+          image_url: item.image_url,
+          custom_color: item.custom_color,
+          position_x: item.position_x,
+          position_y: item.position_y
         };
       });
       
@@ -44,7 +47,7 @@ export default async function handler(req, res) {
       
     } else if (req.method === 'POST') {
       // Add or update friendly name
-      const { script_name, friendly_name, description, image_url } = req.body;
+      const { script_name, friendly_name, description, image_url, custom_color, position_x, position_y } = req.body;
       
       if (!script_name || !friendly_name) {
         return res.status(400).json({
@@ -59,7 +62,12 @@ export default async function handler(req, res) {
           script_name,
           friendly_name,
           description: description || null,
-          image_url: image_url || null
+          image_url: image_url || null,
+          custom_color: custom_color || null,
+          position_x: position_x || null,
+          position_y: position_y || null
+        }, {
+          onConflict: 'script_name'
         })
         .select();
       

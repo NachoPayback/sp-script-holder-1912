@@ -3,12 +3,16 @@ import styled, { ThemeProvider } from 'styled-components';
 import { LoginForm } from './components/auth/LoginForm';
 import { ScriptGrid } from './components/ui/ScriptGrid';
 import { ActivityFeed } from './components/ui/ActivityFeed';
-import { SettingsModal } from './components/ui/SettingsModal';
+import { ScriptCustomizationModal } from './components/ui/ScriptCustomizationModal';
+import { HubSettingsModal } from './components/ui/HubSettingsModal';
+import { FakeCallModal } from './components/ui/FakeCallModal';
+import { ToastProvider } from './components/ui/ToastContainer';
 import { useAuth } from './hooks/useAuth';
 import { useRealtime } from './hooks/useRealtime';
 import { theme } from './styles/theme';
 import { hubApi, assignmentApi, scriptApi } from './services/api';
-import { isCurrentUserAdmin } from './utils/admin';
+import { isUserAdmin } from './utils/admin';
+import { getUserColor } from './utils/userColors';
 import type { Hub, HubScript, Assignment } from './types/Hub';
 
 const AppContainer = styled.div`
@@ -91,12 +95,16 @@ const ContentArea = styled.div`
 `;
 
 const Sidebar = styled.aside<{ $show: boolean }>`
-  width: 300px;
-  background: ${theme.colors.surface};
-  border-left: 1px solid ${theme.colors.border};
+  width: 320px;
+  background: rgba(30, 41, 59, 0.3);
+  border-left: 1px solid rgba(148, 163, 184, 0.1);
   padding: ${theme.spacing.lg};
-  display: ${props => props.$show ? 'block' : 'none'};
-  overflow-y: auto;
+  display: ${props => props.$show ? 'flex' : 'none'};
+  flex-direction: column;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+  border-radius: 0;
+  box-shadow: inset 1px 0 0 rgba(148, 163, 184, 0.1);
 `;
 
 const HubListContainer = styled.div`
@@ -186,70 +194,117 @@ const BackHeader = styled.div`
 `;
 
 const BackButton = styled.button`
-  background: ${theme.colors.textSecondary};
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: ${theme.borderRadius.sm};
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: #e2e8f0;
+  padding: 12px 24px;
+  border-radius: 12px;
   cursor: pointer;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   
   &:hover {
-    background: ${theme.colors.text};
+    background: rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
   }
 `;
 
-const EditModeToggle = styled.button<{ $isActive: boolean }>`
-  background: ${props => props.$isActive ? theme.colors.primary : theme.colors.surface};
-  color: ${props => props.$isActive ? theme.colors.text : theme.colors.textSecondary};
-  border: 2px solid ${props => props.$isActive ? theme.colors.primary : theme.colors.borderLight};
-  padding: 8px 16px;
-  border-radius: ${theme.borderRadius.md};
-  cursor: pointer;
-  font-family: ${theme.fonts.family};
-  font-weight: ${theme.fonts.weights.bold};
+const HubName = styled.h2`
+  font-size: 2.2rem;
+  font-weight: ${theme.fonts.weights.black};
+  color: ${theme.colors.text};
+  margin: 0;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  transition: all ${theme.animations.fast} ${theme.animations.easing};
+  letter-spacing: 0.1em;
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #6366f1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+`;
+
+const EditModeToggle = styled.button<{ $isActive: boolean }>`
+  background: ${props => props.$isActive ? 'rgba(59, 130, 246, 0.3)' : 'rgba(30, 41, 59, 0.5)'};
+  border: 1px solid ${props => props.$isActive ? '#3b82f6' : 'rgba(148, 163, 184, 0.2)'};
+  color: ${props => props.$isActive ? '#60a5fa' : '#e2e8f0'};
+  padding: 12px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   
   &:hover {
-    background: ${props => props.$isActive ? theme.colors.primaryLight : theme.colors.surfaceLight};
-    border-color: ${theme.colors.primary};
-    color: ${theme.colors.primary};
+    background: ${props => props.$isActive ? 'rgba(59, 130, 246, 0.4)' : 'rgba(59, 130, 246, 0.2)'};
+    border-color: rgba(59, 130, 246, 0.5);
     transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
   }
   
   ${props => props.$isActive && `
-    box-shadow: ${theme.shadows.glow};
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.6), 0 2px 10px rgba(0, 0, 0, 0.1);
+    animation: editModePulse 2s ease-in-out infinite;
+    
+    @keyframes editModePulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.6), 0 2px 10px rgba(0, 0, 0, 0.1); }
+      50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.8), 0 4px 20px rgba(59, 130, 246, 0.3); }
+    }
   `}
 `;
 
 const SettingsButton = styled.button`
-  background: ${theme.colors.surface};
-  color: ${theme.colors.textSecondary};
-  border: 2px solid ${theme.colors.borderLight};
-  padding: 8px 16px;
-  border-radius: ${theme.borderRadius.md};
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: #e2e8f0;
+  padding: 12px 20px;
+  border-radius: 12px;
   cursor: pointer;
-  font-family: ${theme.fonts.family};
-  font-weight: ${theme.fonts.weights.bold};
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  transition: all ${theme.animations.fast} ${theme.animations.easing};
+  letter-spacing: 0.1em;
   
   &:hover {
-    background: ${theme.colors.surfaceLight};
-    border-color: ${theme.colors.primary};
-    color: ${theme.colors.primary};
+    background: rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.5);
+    color: #a5b4fc;
     transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
   }
 `;
 
 const SectionTitle = styled.h2`
-  font-size: 1.2rem;
-  font-weight: ${theme.fonts.weights.bold};
-  color: ${theme.colors.text};
-  margin: 0 0 ${theme.spacing.md} 0;
+  font-size: 1.3rem;
+  font-weight: ${theme.fonts.weights.black};
+  color: #f1f5f9;
+  margin: 0 0 ${theme.spacing.lg} 0;
   text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  background: linear-gradient(135deg, #60a5fa 0%, #a5b4fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  padding-bottom: ${theme.spacing.sm};
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
 `;
 
 const LoadingMessage = styled.div`
@@ -259,6 +314,54 @@ const LoadingMessage = styled.div`
   font-size: 1.1rem;
 `;
 
+const SidebarSection = styled.div`
+  margin-bottom: ${theme.spacing.xl};
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: ${theme.borderRadius.lg};
+  padding: ${theme.spacing.lg};
+  border: 1px solid rgba(148, 163, 184, 0.1);
+`;
+
+const UserBubbleContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${theme.spacing.sm};
+`;
+
+const UserBubble = styled.div<{ $userColor: string }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${props => props.$userColor}20;
+  border: 2px solid ${props => props.$userColor};
+  border-radius: ${theme.borderRadius.lg};
+  padding: ${theme.spacing.md} ${theme.spacing.lg};
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: ${props => props.$userColor}30;
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px ${props => props.$userColor}40;
+  }
+`;
+
+const UserName = styled.span<{ $userColor: string }>`
+  color: ${props => props.$userColor};
+  font-weight: ${theme.fonts.weights.bold};
+  font-size: 1rem;
+  text-shadow: 0 0 8px ${props => props.$userColor}60;
+`;
+
+const ActivityFeedContainer = styled.div`
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: ${theme.borderRadius.md};
+  padding: ${theme.spacing.md};
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  flex: 1;
+  overflow-y: auto;
+  min-height: 200px;
+`;
+
 function App() {
   const { user, loading: authLoading, error: authError, login, logout } = useAuth();
   const [view, setView] = useState<'hubs' | 'scripts'>('hubs');
@@ -266,12 +369,14 @@ function App() {
   const [selectedHub, setSelectedHub] = useState<Hub | null>(null);
   const [scripts, setScripts] = useState<HubScript[]>([]);
   const [assignment, setAssignment] = useState<Assignment | null>(null);
-  const [friendlyNames, setFriendlyNames] = useState<Record<string, { friendly_name: string }>>({});
+  const [friendlyNames, setFriendlyNames] = useState<Record<string, { friendly_name: string; image_url?: string; custom_color?: string; position_x?: number; position_y?: number }>>({});
   const [activity, setActivity] = useState<any[]>([]);
   const [connectedUsers, setConnectedUsers] = useState<any[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [hubSettingsModalOpen, setHubSettingsModalOpen] = useState(false);
+  const [scriptCustomizationModalOpen, setScriptCustomizationModalOpen] = useState(false);
   const [selectedScriptForEdit, setSelectedScriptForEdit] = useState<string | null>(null);
+  const [fakeCallModalOpen, setFakeCallModalOpen] = useState(false);
   
   const { scriptCommands } = useRealtime(selectedHub?.id || '');
 
@@ -331,11 +436,17 @@ function App() {
   const handleScriptExecute = async (scriptName: string) => {
     if (!selectedHub || !user) return;
 
+    // Handle fake "mute_call" script
+    if (scriptName === 'mute_call') {
+      setFakeCallModalOpen(true);
+      return;
+    }
+
     // Check if we're in edit mode and user is admin
-    if (isEditMode && isCurrentUserAdmin()) {
+    if (isEditMode && isUserAdmin(user)) {
       // Open customization for this specific script
       setSelectedScriptForEdit(scriptName);
-      setSettingsModalOpen(true);
+      setScriptCustomizationModalOpen(true);
       return;
     }
 
@@ -380,9 +491,11 @@ function App() {
       // Load scripts
       const scriptsResponse = await hubApi.getHubScripts(hub.id);
       if (scriptsResponse.success && scriptsResponse.scripts) {
-        setScripts(scriptsResponse.scripts);
+        // Add fake "Mute the Call" script to the list
+        const scriptsWithFake = [...scriptsResponse.scripts, 'mute_call'];
+        setScripts(scriptsWithFake);
       } else {
-        setScripts([]);
+        setScripts(['mute_call']); // Always include fake script even if no real scripts
       }
 
       // Load assignment if in assigned mode
@@ -402,7 +515,17 @@ function App() {
       ) : [];
       const friendlyResponse = await hubApi.getFriendlyNames(scriptNames);
       if (friendlyResponse.success) {
-        setFriendlyNames(friendlyResponse.friendly_names);
+        // Add fake script friendly name
+        const friendlyNamesWithFake = {
+          ...friendlyResponse.friendly_names,
+          'mute_call': { friendly_name: 'Mute the Call', custom_color: '#ef4444' }
+        };
+        setFriendlyNames(friendlyNamesWithFake);
+      } else {
+        // Fallback if no friendly names loaded
+        setFriendlyNames({
+          'mute_call': { friendly_name: 'Mute the Call', custom_color: '#ef4444' }
+        });
       }
     } catch (error) {
       console.error('Failed to load hub data:', error);
@@ -451,27 +574,30 @@ function App() {
   if (!user) {
     return (
       <ThemeProvider theme={theme}>
-        <AppContainer>
-          <LoginForm 
-            onLogin={login}
-            loading={authLoading}
-            error={authError}
-          />
-        </AppContainer>
+        <ToastProvider>
+          <AppContainer>
+            <LoginForm 
+              onLogin={login}
+              loading={authLoading}
+              error={authError}
+            />
+          </AppContainer>
+        </ToastProvider>
       </ThemeProvider>
     );
   }
 
   return (
     <ThemeProvider theme={theme}>
-      <AppContainer>
+      <ToastProvider>
+        <AppContainer>
         <Header>
           <HeaderContent>
             <Title>SP CREW CONTROL</Title>
 {user && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                 <span style={{ color: theme.colors.textSecondary }}>
-                  {user.username}
+                  {user.username} {isUserAdmin(user) ? '(ADMIN)' : ''}
                 </span>
                 <button 
                   onClick={logout}
@@ -517,25 +643,29 @@ function App() {
               <ScriptsContainer>
                 <BackHeader>
                   <BackButton onClick={handleBackToHubs}>← BACK</BackButton>
-                  <h2>{selectedHub?.friendly_name}</h2>
+                  <HubName>{selectedHub?.friendly_name}</HubName>
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                     {/* Edit mode toggle - only show for admin */}
-                    {isCurrentUserAdmin() && (
+                    {isUserAdmin(user) && (
                       <EditModeToggle 
                         $isActive={isEditMode}
                         onClick={() => setIsEditMode(!isEditMode)}
                         title={isEditMode ? 'Exit edit mode' : 'Enter edit mode - click buttons to customize them'}
                       >
-                        {isEditMode ? '✏️ EXIT EDIT' : '✏️ EDIT MODE'}
+                        {isEditMode ? 'EXIT EDIT' : 'EDIT MODE'}
                       </EditModeToggle>
                     )}
+                    <RefreshButton onClick={() => {
+                      if (selectedHub) {
+                        loadHubData(selectedHub);
+                      }
+                    }}>🔄 REFRESH SCRIPTS</RefreshButton>
                     <SettingsButton onClick={() => {
-                      setSelectedScriptForEdit(null);
-                      setSettingsModalOpen(true);
-                    }}>⚙ SETTINGS</SettingsButton>
+                      setHubSettingsModalOpen(true);
+                    }}>⚙ HUB SETTINGS</SettingsButton>
                   </div>
                 </BackHeader>
-                {isEditMode && isCurrentUserAdmin() && (
+                {isEditMode && isUserAdmin(user) && (
                   <div style={{
                     padding: '12px 16px',
                     margin: '0 0 20px 0',
@@ -547,7 +677,7 @@ function App() {
                     fontSize: '0.9rem',
                     fontWeight: theme.fonts.weights.semibold
                   }}>
-                    🎨 <strong>Edit Mode Active:</strong> Click any button to customize its appearance, colors, and position
+                    <strong>Edit Mode Active:</strong> Click any button to customize its appearance, colors, and position
                   </div>
                 )}
                 <ScriptGrid
@@ -564,40 +694,62 @@ function App() {
           </ContentArea>
 
           <Sidebar $show={view === 'scripts'}>
-            <div style={{ marginBottom: theme.spacing.lg }}>
+            <SidebarSection>
               <SectionTitle>Connected Users</SectionTitle>
-              <div>
-                {connectedUsers.map((user: any, index) => (
-                  <div key={index} style={{ padding: '4px 0', color: theme.colors.textSecondary }}>
-                    {user.username || user.user_id}
-                  </div>
-                ))}
-              </div>
-            </div>
+              <UserBubbleContainer>
+                {connectedUsers.map((user: any, index) => {
+                  const username = user.username || user.user_id;
+                  const userColor = getUserColor(username);
+                  
+                  return (
+                    <UserBubble key={index} $userColor={userColor}>
+                      <UserName $userColor={userColor}>{username}</UserName>
+                    </UserBubble>
+                  );
+                })}
+              </UserBubbleContainer>
+            </SidebarSection>
             
-            <div>
+            <SidebarSection style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
               <SectionTitle>Activity Feed</SectionTitle>
-              <ActivityFeed items={activity} />
-            </div>
+              <ActivityFeedContainer>
+                <ActivityFeed items={activity} />
+              </ActivityFeedContainer>
+            </SidebarSection>
           </Sidebar>
         </MainContent>
         
-        <SettingsModal
-          isOpen={settingsModalOpen}
+        <HubSettingsModal
+          isOpen={hubSettingsModalOpen}
+          onClose={() => setHubSettingsModalOpen(false)}
+          hubName={selectedHub?.friendly_name || 'Hub'}
+          currentMode={selectedHub?.mode || 'shared'}
+          currentShowNames={selectedHub?.show_script_names || false}
+          onSave={handleHubSettingsUpdate}
+          onShuffleScripts={handleShuffleScripts}
+        />
+        
+        <ScriptCustomizationModal
+          isOpen={scriptCustomizationModalOpen}
           onClose={() => {
-            setSettingsModalOpen(false);
+            setScriptCustomizationModalOpen(false);
             setSelectedScriptForEdit(null);
           }}
-          scripts={scripts}
-          friendlyNames={friendlyNames}
-          hubMode={selectedHub?.mode || 'shared'}
-          showScriptNames={selectedHub?.show_script_names || false}
-          onFriendlyNamesUpdate={handleFriendlyNamesUpdate}
-          onHubSettingsUpdate={handleHubSettingsUpdate}
-          onShuffleScripts={handleShuffleScripts}
-          selectedScript={selectedScriptForEdit}
+          scriptName={selectedScriptForEdit || ''}
+          currentFriendlyName={selectedScriptForEdit ? friendlyNames[selectedScriptForEdit]?.friendly_name : ''}
+          currentImageUrl={selectedScriptForEdit ? friendlyNames[selectedScriptForEdit]?.image_url : ''}
+          currentColor={selectedScriptForEdit ? friendlyNames[selectedScriptForEdit]?.custom_color : ''}
+          currentPositionX={selectedScriptForEdit ? friendlyNames[selectedScriptForEdit]?.position_x : 0}
+          currentPositionY={selectedScriptForEdit ? friendlyNames[selectedScriptForEdit]?.position_y : 0}
+          onSave={handleFriendlyNamesUpdate}
         />
-      </AppContainer>
+        
+        <FakeCallModal
+          isOpen={fakeCallModalOpen}
+          onClose={() => setFakeCallModalOpen(false)}
+        />
+        </AppContainer>
+      </ToastProvider>
     </ThemeProvider>
   );
 }

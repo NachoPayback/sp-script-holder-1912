@@ -77,18 +77,30 @@ def set_cursor_size(size):
         winreg.SetValueEx(key, "CursorBaseSize", 0, winreg.REG_DWORD, base_size)
         winreg.CloseKey(key)
 
-        # Reload cursors using SystemParametersInfo
-        SPI_SETCURSORS = 0x0057  # This is the correct value for reloading cursors
+        # Force immediate cursor reload with multiple API calls
+        SPI_SETCURSORS = 0x0057
         SPIF_UPDATEINIFILE = 0x01
         SPIF_SENDCHANGE = 0x02
-
+        
         # Call SystemParametersInfo to reload cursors
-        result = ctypes.windll.user32.SystemParametersInfoW(
+        result1 = ctypes.windll.user32.SystemParametersInfoW(
             SPI_SETCURSORS,
             0,
             None,
             SPIF_UPDATEINIFILE | SPIF_SENDCHANGE
         )
+        
+        # Force cursor cache refresh
+        ctypes.windll.user32.SetSystemCursor(0, 32512)  # OCR_NORMAL
+        
+        # Additional refresh calls
+        ctypes.windll.shell32.SHChangeNotify(0x08000000, 0x0000, None, None)
+        
+        # Force desktop refresh
+        ctypes.windll.user32.InvalidateRect(0, None, True)
+        ctypes.windll.user32.UpdateWindow(0)
+        
+        result = result1
 
         if result:
             print(f"Cursor size changed to {size} (base size: {base_size}px)")

@@ -51,8 +51,8 @@ export const theme = {
     hex: '20%', // For hexagon-inspired corners
   },
   button: {
-    size: 180,
-    borderWidth: 2,
+    size: 220,
+    borderWidth: 8,
     padding: 20,
   },
   fonts: {

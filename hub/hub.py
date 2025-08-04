@@ -33,13 +33,20 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 from rich import box
 
+# Configuration for standalone hub
+GITHUB_REPO_URL = "https://github.com/NachoPayback/P-Buttons.git"
+WORKING_DIR = Path(__file__).parent.parent  # Use current project directory
+
 # Add project root to path for script imports
-project_root = Path(__file__).parent.parent
+project_root = WORKING_DIR
 sys.path.insert(0, str(project_root))
 
 class HubWorker:
     def __init__(self):
         self.setup_logging()
+        
+        # Ensure working directory exists
+        self.setup_working_directory()
 
         # Hub configuration
         self.machine_id = self.get_machine_id()
@@ -76,13 +83,33 @@ class HubWorker:
         startup_panel = Panel.fit(
             f"[bold blue]SP CREW CONTROL V2 - HUB WORKER[/bold blue]\n"
             f"[dim]Pure script execution engine using Supabase real-time messaging[/dim]\n\n"
-            f"[green]✓[/green] Machine ID: [cyan]{self.machine_id}[/cyan]\n"
-            f"[green]✓[/green] Scripts Found: [yellow]{len(self.available_scripts)}[/yellow]\n"
-            f"[green]✓[/green] Dependencies Ready: [yellow]{sum(1 for ready in self.script_dependencies_ready.values() if ready)}[/yellow]",
+            f"[green]Machine ID:[/green] [cyan]{self.machine_id}[/cyan]\n"
+            f"[green]Scripts Found:[/green] [yellow]{len(self.available_scripts)}[/yellow]\n"
+            f"[green]Dependencies Ready:[/green] [yellow]{sum(1 for ready in self.script_dependencies_ready.values() if ready)}[/yellow]",
             title="[bold green]INITIALIZATION COMPLETE[/bold green]",
             border_style="green"
         )
-        self.console.print(startup_panel)
+        if platform.system() != "Windows":  # Only show rich panels on non-Windows
+            self.console.print(startup_panel)
+
+    def setup_logging(self):
+        """Setup logging - plain logging for Windows to avoid encoding issues"""
+        if platform.system() == "Windows":
+            self.console = Console(force_terminal=False)
+            logging.basicConfig(
+                level=logging.INFO,
+                format="%(asctime)s - %(levelname)s - %(message)s",
+                datefmt="%H:%M:%S"
+            )
+        else:
+            self.console = Console(force_terminal=True)
+            logging.basicConfig(
+                level=logging.INFO,
+                format="%(message)s",
+                datefmt="[%X]",
+                handlers=[RichHandler(rich_tracebacks=True, console=self.console)]
+            )
+        self.logger = logging.getLogger("hub")
 
     def install_script_dependencies(self, script_dir: Path) -> bool:
         """Install dependencies for a script using UV from pyproject.toml or inline script deps"""
@@ -120,11 +147,11 @@ class HubWorker:
                     site_packages = venv_path / "lib" / "python"  # Unix-like fallback
                 
                 if site_packages.exists() and any(site_packages.iterdir()):
-                    self.logger.info(f"[bright_green]✓[/bright_green] [bold]Dependencies already installed[/bold] for [cyan]{script_name}[/cyan]", extra={"markup": True})
+                    self.logger.info(f"[bright_green]Dependencies already installed[/bright_green] [bold]for[/bold] [cyan]{script_name}[/cyan]", extra={"markup": True})
                     self.script_dependencies_ready[script_name] = True
                     return True
             
-            self.logger.info(f"[yellow]⚙[/yellow] [bold]Installing dependencies[/bold] for [cyan]{script_name}[/cyan]...", extra={"markup": True})
+            self.logger.info(f"[yellow]Installing dependencies[/yellow] [bold]for[/bold] [cyan]{script_name}[/cyan]...", extra={"markup": True})
             
             if pyproject_path.exists():
                 # Initialize UV project if needed and install dependencies
@@ -155,23 +182,108 @@ class HubWorker:
                 )
             
             if result.returncode == 0:
-                self.logger.info(f"[bright_green]✓[/bright_green] [bold]Dependencies ready[/bold] for [cyan]{script_name}[/cyan]", extra={"markup": True})
+                self.logger.info(f"[bright_green]Dependencies ready[/bright_green] [bold]for[/bold] [cyan]{script_name}[/cyan]", extra={"markup": True})
                 self.script_dependencies_ready[script_name] = True
                 return True
             else:
-                self.logger.error(f"[bright_red]✗[/bright_red] [bold]Failed to install dependencies[/bold] for [cyan]{script_name}[/cyan]:", extra={"markup": True})
+                self.logger.error(f"[bright_red]Failed to install dependencies[/bright_red] [bold]for[/bold] [cyan]{script_name}[/cyan]:", extra={"markup": True})
                 self.logger.error(f"[DEPS]   {result.stderr.strip()}")
                 self.script_dependencies_ready[script_name] = False
                 return False
                 
         except subprocess.TimeoutExpired:
-            self.logger.error(f"[DEPS] ✗ Timeout installing dependencies for {script_name}")
+            self.logger.error(f"[DEPS] Timeout installing dependencies for {script_name}")
             self.script_dependencies_ready[script_name] = False
             return False
         except Exception as e:
-            self.logger.error(f"[DEPS] ✗ Error installing dependencies for {script_name}: {e}")
+            self.logger.error(f"[DEPS] Error installing dependencies for {script_name}: {e}")
             self.script_dependencies_ready[script_name] = False
             return False
+
+    def setup_working_directory(self):
+        """Setup working directory and ensure uv is available"""
+        try:
+            # Ensure uv is installed first
+            self.ensure_uv_installed()
+            
+            # We're using the current project directory
+            self.console.print(f"[blue]Using project directory: {WORKING_DIR}[/blue]")
+                
+        except Exception as e:
+            self.logger.error(f"Error setting up working directory: {e}")
+            raise
+
+    def get_machine_id(self) -> str:
+        """Generate a unique machine ID based on hardware"""
+        try:
+            # Get hostname
+            hostname = socket.gethostname()
+            
+            # Try to get MAC address
+            import uuid
+            mac = ':'.join(['{:02x}'.format((uuid.getnode() >> elements) & 0xff) 
+                           for elements in range(0,2*6,2)][::-1])
+            
+            # Create hash from hostname + MAC
+            machine_string = f"{hostname}-{mac}"
+            return hashlib.md5(machine_string.encode()).hexdigest()[:16]
+        except Exception:
+            # Fallback to hostname + random if MAC fails
+            fallback_string = f"{socket.gethostname()}-{random.randint(1000, 9999)}"
+            return hashlib.md5(fallback_string.encode()).hexdigest()[:16]
+
+    def ensure_uv_installed(self):
+        """Ensure uv is installed and available"""
+        try:
+            # Check if uv is already available
+            result = subprocess.run(["uv", "--version"], capture_output=True, text=True)
+            if result.returncode == 0:
+                self.console.print(f"[green]uv is already installed: {result.stdout.strip()}[/green]")
+                return
+        except FileNotFoundError:
+            pass
+        
+        # Install uv
+        self.console.print("[yellow]Installing uv package manager...[/yellow]")
+        
+        try:
+            if platform.system() == "Windows":
+                # Use PowerShell to install uv on Windows
+                result = subprocess.run([
+                    "powershell", "-Command",
+                    "irm https://astral.sh/uv/install.ps1 | iex"
+                ], capture_output=True, text=True, timeout=120)
+            else:
+                # Use curl for Unix-like systems
+                result = subprocess.run([
+                    "sh", "-c",
+                    "curl -LsSf https://astral.sh/uv/install.sh | sh"
+                ], capture_output=True, text=True, timeout=120)
+            
+            if result.returncode == 0:
+                self.console.print("[green]uv installed successfully![/green]")
+                
+                # Verify installation
+                result = subprocess.run(["uv", "--version"], capture_output=True, text=True)
+                if result.returncode == 0:
+                    self.console.print(f"[green]uv version: {result.stdout.strip()}[/green]")
+                else:
+                    # Try adding to PATH for current session
+                    if platform.system() == "Windows":
+                        uv_path = Path.home() / ".cargo" / "bin"
+                    else:
+                        uv_path = Path.home() / ".local" / "bin"
+                    
+                    if uv_path.exists():
+                        os.environ["PATH"] = str(uv_path) + os.pathsep + os.environ.get("PATH", "")
+                        self.console.print(f"[yellow]Added {uv_path} to PATH[/yellow]")
+            else:
+                raise Exception(f"Installation failed: {result.stderr}")
+                
+        except Exception as e:
+            self.logger.error(f"Failed to install uv: {e}")
+            self.console.print("[red]Failed to install uv. Please install manually from https://docs.astral.sh/uv/getting-started/installation/[/red]")
+            raise
 
     def pull_latest_scripts(self):
         """Pull latest scripts from git repository using GitPython (scripts directory only)"""
@@ -180,15 +292,6 @@ class HubWorker:
             
             # Open the git repository
             repo = git.Repo(project_root)
-            
-            # Enable sparse checkout if not already enabled
-            with repo.config_writer() as config:
-                config.set_value("core", "sparseCheckout", "true")
-            
-            # Set sparse checkout to include only scripts directory
-            sparse_checkout_file = project_root / ".git" / "info" / "sparse-checkout"
-            with open(sparse_checkout_file, 'w') as f:
-                f.write("scripts/\n")  # Includes all script files, subdirectories, and pyproject.toml files
             
             # Pull latest changes from origin/master
             origin = repo.remotes.origin
@@ -201,8 +304,9 @@ class HubWorker:
 
     def setup_logging(self):
         """Setup Rich logging with beautiful colors and formatting"""
-        log_dir = Path("logs")
-        log_dir.mkdir(exist_ok=True)
+        # Note: Can't use WORKING_DIR here as it's called before setup_working_directory
+        log_dir = Path.home() / ".sp-crew-hub" / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
 
         log_file = log_dir / f"hub_worker_{datetime.now().strftime('%Y%m%d')}.log"
         
@@ -282,7 +386,7 @@ class HubWorker:
             self.logger.warning(f"[DISCOVERY] These scripts may fail at runtime!")
         
         ready_count = sum(1 for ready in self.script_dependencies_ready.values() if ready)
-        self.logger.info(f"[bright_yellow]🔍[/bright_yellow] [bold]Script Discovery Complete[/bold] - Found [yellow]{len(scripts)}[/yellow] scripts, [green]{ready_count}[/green] with dependencies ready", extra={"markup": True})
+        self.logger.info(f"[bright_yellow]Script Discovery Complete[/bright_yellow] - Found [yellow]{len(scripts)}[/yellow] scripts, [green]{ready_count}[/green] with dependencies ready", extra={"markup": True})
 
         return scripts
 
@@ -308,7 +412,7 @@ class HubWorker:
             ).execute()
 
             self.hub_id = result.data[0]['id']
-            self.logger.info(f"[bright_green]✓[/bright_green] [bold]Hub registered successfully[/bold] [dim]\\[Hub ID: [cyan]{self.hub_id}[/cyan]\\][/dim]", extra={"markup": True})
+            self.logger.info(f"[bright_green]Hub registered successfully[/bright_green] [bold]Hub ID:[/bold] [cyan]{self.hub_id}[/cyan]", extra={"markup": True})
 
             # Update hub_scripts table
             self.update_hub_scripts()
@@ -503,9 +607,9 @@ class HubWorker:
                 }
 
                 if proc.returncode == 0:
-                    self.logger.info(f"[bright_green]✓[/bright_green] [bold]{script_name}[/bold] executed successfully [dim]({duration_ms}ms)[/dim]", extra={"markup": True})
+                    self.logger.info(f"[bright_green]{script_name}[/bright_green] [bold]executed successfully[/bold] [dim]({duration_ms}ms)[/dim]", extra={"markup": True})
                 else:
-                    self.logger.error(f"[bright_red]✗[/bright_red] [bold]{script_name}[/bold] failed: {stderr}", extra={"markup": True})
+                    self.logger.error(f"[bright_red]{script_name}[/bright_red] [bold]failed:[/bold] {stderr}", extra={"markup": True})
                     execution_result["error"] = stderr
 
                 return execution_result
@@ -795,7 +899,7 @@ class HubWorker:
         
         heartbeat_thread = threading.Thread(target=heartbeat, daemon=True)
         heartbeat_thread.start()
-        self.logger.info("[bright_green]✓[/bright_green] [bold]Status heartbeat started[/bold]", extra={"markup": True})
+        self.logger.info("[bright_green]Status heartbeat started[/bright_green]", extra={"markup": True})
 
     async def run_async(self):
         """Start the Hub Worker service (headless) with async real-time"""
@@ -816,11 +920,11 @@ class HubWorker:
         # Rich ready panel
         ready_panel = Panel.fit(
             f"[bold green]HUB WORKER IS ONLINE AND READY![/bold green]\n\n"
-            f"[bright_green]✓[/bright_green] Real-time messaging: [green]Connected[/green]\n"
-            f"[bright_green]✓[/bright_green] Presence tracking: [green]Active[/green]\n"
-            f"[bright_green]✓[/bright_green] Status heartbeat: [green]Running[/green]\n\n"
+            f"[bright_green]Real-time messaging:[/bright_green] [green]Connected[/green]\n"
+            f"[bright_green]Presence tracking:[/bright_green] [green]Active[/green]\n"
+            f"[bright_green]Status heartbeat:[/bright_green] [green]Running[/green]\n\n"
             f"[dim]Waiting for script execution commands...[/dim]",
-            title="[bold bright_green]🚀 READY FOR COMMANDS[/bold bright_green]",
+            title="[bold bright_green]READY FOR COMMANDS[/bold bright_green]",
             border_style="bright_green"
         )
         self.console.print(ready_panel)

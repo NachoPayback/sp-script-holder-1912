@@ -115,6 +115,7 @@ export const ScriptGrid: React.FC<ScriptGridProps> = ({
           />
         );
       })}
+      
     </GridContainer>
   );
 };

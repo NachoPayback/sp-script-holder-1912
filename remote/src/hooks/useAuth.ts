@@ -15,9 +15,13 @@ export const useAuth = () => {
         if (token) {
           const result = await authApi.verify(token);
           if (result.valid && result.user) {
+            // Always fetch fresh permissions from database, don't trust token
+            const permissionsResult = await authApi.getUserPermissions(result.user.username);
+            const freshPermissions = permissionsResult.success ? permissionsResult.permissions : undefined;
             setUser({
               username: result.user.username,
-              isAuthenticated: true
+              isAuthenticated: true,
+              permissions: freshPermissions
             });
             setLoading(false);
             return;
@@ -45,7 +49,8 @@ export const useAuth = () => {
         localStorage.setItem('sp_crew_token', result.token);
         setUser({
           username: result.user.username,
-          isAuthenticated: true
+          isAuthenticated: true,
+          permissions: result.user.permissions
         });
         return true;
       } else {

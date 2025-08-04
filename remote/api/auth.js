@@ -54,7 +54,7 @@ export default async function handler(req, res) {
     const sessionToken = Buffer.from(
       JSON.stringify({
         username,
-        permissions: user.permissions || { all_hubs: true },
+        permissions: user.permissions,
         expires: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
         random: Math.random().toString(36).substring(7)
       })
@@ -67,7 +67,7 @@ export default async function handler(req, res) {
       token: sessionToken,
       user: {
         username,
-        permissions: user.permissions || { all_hubs: true }
+        permissions: user.permissions
       }
     });
 
