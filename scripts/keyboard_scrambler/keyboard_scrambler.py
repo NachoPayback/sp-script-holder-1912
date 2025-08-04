@@ -48,31 +48,18 @@ def get_random_keys():
 
 def scramble_keyboard():
     """Execute the keyboard scrambling"""
-    print("⌨️ KEYBOARD SCRAMBLER ACTIVATED!")
-    print("=" * 40)
-    
     # Get random keys to press
     keys_to_press = get_random_keys()
     
-    print(f"🎯 Will press {len(keys_to_press)} random keys")
-    print(f"🔑 Keys: {', '.join(keys_to_press)}")
-    print()
-    
-    # Give user a moment to see what's happening
-    print("🚨 Starting keyboard chaos in 2 seconds...")
-    time.sleep(2)
-    
-    print("⌨️ SCRAMBLING KEYBOARD NOW!")
+    # Give user a moment before starting
+    time.sleep(1)
     
     # Press each key with random delays
-    for i, key in enumerate(keys_to_press, 1):
+    for key in keys_to_press:
         try:
             # Random delay between key presses (0.05 to 0.3 seconds)
             delay = random.uniform(0.05, 0.3)
             time.sleep(delay)
-            
-            # Press the key
-            print(f"   [{i}/{len(keys_to_press)}] Pressing: {key}")
             
             # Handle special key combinations
             if key in ['shift', 'ctrl', 'alt']:
@@ -84,24 +71,16 @@ def scramble_keyboard():
                 # Regular key press
                 pyautogui.press(key)
                 
-        except Exception as e:
-            print(f"   ⚠ Failed to press {key}: {e}")
+        except Exception:
             continue
-    
-    print()
-    print("✅ KEYBOARD SCRAMBLING COMPLETE!")
-    print("🎉 Hope that caused some entertaining chaos!")
 
 
 def main():
     """Main keyboard scrambler function"""
     try:
         scramble_keyboard()
-    except KeyboardInterrupt:
-        print("\n🛑 Keyboard scrambler interrupted by user")
-    except Exception as e:
-        print(f"❌ Error during keyboard scrambling: {e}")
-        print("💡 Make sure no security software is blocking key simulation")
+    except:
+        pass
 
 
 if __name__ == "__main__":

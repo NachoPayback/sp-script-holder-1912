@@ -11,7 +11,6 @@ import sys
 try:
     import psutil
 except ImportError:
-    print("Installing required dependency: psutil")
     subprocess.check_call([sys.executable, "-m", "pip", "install", "psutil"])
     import psutil
 
@@ -50,8 +49,6 @@ def open_rickroll():
     url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
     chrome_path = get_chrome_executable()
     
-    print("🎵 Opening Rick Roll video...")
-    
     try:
         # Open Chrome with the Rick Roll URL
         process = subprocess.Popen([
@@ -61,21 +58,16 @@ def open_rickroll():
             url
         ])
         
-        print(f"✅ Rick Roll opened! Process ID: {process.pid}")
         return process
         
     except Exception as e:
-        print(f"❌ Failed to open Chrome: {e}")
-        print("💡 Trying default browser...")
         
         # Fallback: Use default browser
         try:
             import webbrowser
             webbrowser.open(url)
-            print("✅ Opened in default browser")
             return None  # Can't track process for default browser
         except Exception as e2:
-            print(f"❌ Failed to open default browser: {e2}")
             return None
 
 
@@ -89,68 +81,47 @@ def close_chrome_tabs_with_rickroll():
                 if proc.info['name'] and 'chrome.exe' in proc.info['name'].lower():
                     cmdline = proc.info['cmdline']
                     if cmdline and any('dQw4w9WgXcQ' in str(arg) for arg in cmdline):
-                        print(f"🔇 Closing Chrome process {proc.info['pid']} with Rick Roll...")
                         proc.terminate()
                         closed_count += 1
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 continue
                 
     except Exception as e:
-        print(f"⚠ Error closing Chrome tabs: {e}")
     
     # Alternative method: Close newest Chrome window
     if closed_count == 0:
         try:
-            print("🔇 Attempting to close newest Chrome window...")
             subprocess.run([
                 "taskkill", "/F", "/IM", "chrome.exe", "/T"
             ], capture_output=True)
-            print("✅ Chrome processes terminated")
         except Exception as e:
-            print(f"⚠ Could not force close Chrome: {e}")
     
     return closed_count
 
 
 def main():
     """Main Rick Roll prank function"""
-    print("🎭 RICK ROLL PRANK ACTIVATED!")
-    print("=" * 40)
-    
     # Random duration between 3-5 seconds
     duration = random.randint(3, 5)
-    print(f"⏰ Rick Roll will play for {duration} seconds")
     
     # Open the Rick Roll
     chrome_process = open_rickroll()
     
-    if chrome_process is None:
-        print("⚠ Could not track Chrome process, using timer only...")
-    
     # Wait for the specified duration
-    print(f"🎵 Rick Rolling in progress...")
-    for i in range(duration, 0, -1):
-        print(f"   Closing in {i} seconds... 🎶", end="\r")
-        time.sleep(1)
-    print()
+    time.sleep(duration)
     
     # Close the Rick Roll
-    print("🔇 Time's up! Closing Rick Roll...")
-    
     if chrome_process:
         try:
             chrome_process.terminate()
-            print("✅ Chrome process terminated")
+            # Wait a moment then force close if needed
+            time.sleep(0.5)
+            if chrome_process.poll() is None:
+                chrome_process.kill()
         except:
-            print("⚠ Could not terminate specific process, trying alternative...")
             close_chrome_tabs_with_rickroll()
     else:
         close_chrome_tabs_with_rickroll()
-    
-    print()
-    print("🎉 RICK ROLL PRANK COMPLETE!")
-    print("🎵 Never gonna give you up, never gonna let you down! 🎵")
-    print("😄 Hope you enjoyed the surprise!")
 
 
 if __name__ == "__main__":

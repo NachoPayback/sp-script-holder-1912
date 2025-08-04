@@ -14,6 +14,7 @@ import math
 import base64
 import io
 import os
+import pygame
 from PIL import Image, ImageTk
 
 
@@ -25,9 +26,25 @@ class FakeClippy:
         self.running = True
         self.start_time = None
         
+        # Initialize pygame mixer for sound
+        try:
+            pygame.mixer.init()
+        except:
+            pass
+        
         # Get Clippy image as base64
         self.clippy_base64 = self.get_clippy_base64()
         
+    def play_clippy_sound(self):
+        """Play the Clippy sound effect"""
+        try:
+            sound_path = os.path.join(os.path.dirname(__file__), 'clippyping.wav')
+            if os.path.exists(sound_path):
+                pygame.mixer.music.load(sound_path)
+                pygame.mixer.music.play()
+        except:
+            pass
+    
     def get_clippy_base64(self):
         """Get the embedded Clippy image as base64"""
         try:
@@ -213,13 +230,15 @@ class FakeClippy:
     def show_clippy(self):
         """Show Clippy with message and animation"""
         try:
+            # Play the Clippy sound
+            self.play_clippy_sound()
+            
             self.create_window()
             
             # Start animation in main thread (tkinter needs this)
             self.animate_and_show()
             
         except Exception as e:
-            print(f"Error showing Clippy: {e}")
             self.close()
     
     def close(self):
@@ -252,22 +271,12 @@ def main():
             pass
     
     try:
-        print("📎 CLIPPY IS BACK!")
-        print("=" * 30)
-        print("💡 The 'helpful' Office Assistant returns...")
-        
         # Create and show Clippy
         clippy = FakeClippy()
         clippy.show_clippy()
         
-        print("✅ Clippy appearance complete!")
-        print("📎 Hope that brought back some memories!")
-        
-    except KeyboardInterrupt:
-        print("\n🛑 Clippy interrupted by user")
-    except Exception as e:
-        print(f"❌ Error showing Clippy: {e}")
-        print("💡 Make sure tkinter and PIL are available on your system")
+    except:
+        pass
 
 
 if __name__ == "__main__":
