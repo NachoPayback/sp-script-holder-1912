@@ -1,71 +1,65 @@
 #!/usr/bin/env python3
 """
-Browser Tab Explosion Prank - Opens multiple browser tabs then closes them
-SMART VERSION - Uses Selenium for precise control
+Browser Tab Chaos - Opens 3 Chrome tabs
 """
 
+import subprocess
 import time
 
 
 def main():
-    """Main prank function using Selenium for safe browser control"""
+    """Open 3 Chrome tabs using command line"""
     print("Browser Tab Chaos starting...")
-
+    
+    # Just open blank tabs
+    urls = [
+        "about:blank",
+        "about:blank", 
+        "about:blank"
+    ]
+    
     try:
-        from selenium import webdriver
-        from selenium.webdriver.chrome.options import Options
-    except ImportError:
-        print("Error: Selenium not installed")
-        print("Please install with: pip install selenium")
-        return
-
-    # Configure Chrome options for faster startup
-    chrome_options = Options()
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--disable-gpu")
-
-    driver = None
-    try:
-        # Start browser instance
-        print("Starting browser...")
-        driver = webdriver.Chrome(options=chrome_options)
-
-        # URLs to open (mix of blank and harmless pages)
-        urls_to_open = [
-            "data:text/html,<h1 style='text-align:center;margin-top:200px;font-family:Arial'>Surprise! 🎉</h1>",
-            "data:text/html,<h1 style='text-align:center;margin-top:200px;font-family:Arial'>Prank in progress... ⚡</h1>",
-            "data:text/html,<h1 style='text-align:center;margin-top:200px;font-family:Arial'>Just a prank! 😄</h1>",
-            "data:text/html,<h1 style='text-align:center;margin-top:200px;font-family:Arial'>Almost done... ⏰</h1>",
-            "data:text/html,<h1 style='text-align:center;margin-top:200px;font-family:Arial'>Tab Chaos! 🌪️</h1>",
-            "data:text/html,<h1 style='text-align:center;margin-top:200px;font-family:Arial'>Gotcha! 😆</h1>",
+        # Try to find Chrome
+        chrome_paths = [
+            r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+            r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+            r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"
         ]
-
-        # Navigate to first URL
-        driver.get(urls_to_open[0])
-        print("Opened first tab")
-
-        # Open remaining URLs in new tabs
-        for i, url in enumerate(urls_to_open[1:], 2):
-            driver.execute_script(f"window.open('{url}', '_blank');")
-            print(f"Opened tab {i}")
-            time.sleep(0.3)  # Small delay for effect
-
-        print(f"Browser chaos activated! {len(urls_to_open)} tabs opened")
-        print("Tabs will stay open - close manually when you're done with the prank!")
-
-        # Don't auto-close - let the tabs stay for maximum prank effect
-        print("Browser tab chaos complete!")
-
+        
+        chrome_exe = None
+        for path in chrome_paths:
+            expanded_path = subprocess.run(["cmd", "/c", f"echo {path}"], 
+                                         capture_output=True, text=True).stdout.strip()
+            try:
+                # Test if Chrome exists at this path
+                subprocess.run([expanded_path, "--version"], 
+                             capture_output=True, check=True)
+                chrome_exe = expanded_path
+                break
+            except:
+                continue
+        
+        if not chrome_exe:
+            print("Chrome not found, trying default browser...")
+            # Use start command to open with default browser
+            for url in urls:
+                subprocess.run(["cmd", "/c", f"start {url}"], shell=True)
+                time.sleep(0.5)
+        else:
+            print(f"Found Chrome at: {chrome_exe}")
+            # Open all URLs in Chrome
+            # First URL opens normally, others open as new tabs
+            subprocess.Popen([chrome_exe, urls[0]])
+            time.sleep(1)  # Wait for Chrome to start
+            
+            for url in urls[1:]:
+                subprocess.Popen([chrome_exe, "--new-tab", url])
+                time.sleep(0.5)
+        
+        print("Opened 3 browser tabs successfully!")
+        
     except Exception as e:
-        print(f"Error during browser automation: {e}")
-        try:
-            # Try to clean up if something went wrong
-            if driver is not None:
-                driver.quit()
-        except Exception:
-            pass
-        print("Note: If browser windows remain open, please close them manually")
+        print(f"Error opening browser tabs: {e}")
 
 
 if __name__ == "__main__":

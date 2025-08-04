@@ -1,141 +1,174 @@
 #!/usr/bin/env python3
 """
-Explosion overlay using PNG sequence with transparency
+Explosion overlay using Windows API for true transparency
 """
 
 import tkinter as tk
-from PIL import Image, ImageTk
 import threading
-import time
-import winsound
-from pathlib import Path
+import subprocess
 import glob
+import time
+from pathlib import Path
+import win32gui
+import win32con
 
 def play_explosion_overlay():
-    """Display explosion overlay with perfect transparency"""
+    """Display explosion overlay with true transparency"""
     
     script_dir = Path(__file__).parent
     audio_file = script_dir / "explosion_audio.mp3"
     frames_dir = script_dir / "frames"
     
-    # Get all PNG frames from frames folder
+    print("Starting transparent explosion overlay...")
+    
+    # Get all frame files
     frame_files = sorted(glob.glob(str(frames_dir / "frame_*.png")))
     
     if not frame_files:
         print("ERROR: No PNG frames found")
         return False
     
-    if not audio_file.exists():
-        print("ERROR: Audio file not found")
-        return False
+    print(f"Using {len(frame_files)} frames")
     
-    print(f"Found {len(frame_files)} frames and audio file")
-    
-    # Create fullscreen transparent window with 95% opacity
+    # Create window
     root = tk.Tk()
-    root.attributes('-fullscreen', True)
-    root.attributes('-topmost', True)
-    root.attributes('-alpha', 0.95)  # 95% opacity
-    root.attributes('-transparentcolor', 'black')
-    root.configure(bg='black')
     root.overrideredirect(True)
+    root.attributes('-topmost', True)
     
     # Get screen dimensions
     screen_width = root.winfo_screenwidth()
     screen_height = root.winfo_screenheight()
     
-    # Create label for displaying frames
-    label = tk.Label(root, bg='black')
-    label.place(x=0, y=0, width=screen_width, height=screen_height)
+    # Position and size window
+    root.geometry(f"{screen_width}x{screen_height}+0+0")
+    root.configure(bg='black')
     
-    # Load and resize all frames with enhanced screening effect
+    # Create canvas
+    canvas = tk.Canvas(root, width=screen_width, height=screen_height, 
+                      bg='black', highlightthickness=0)
+    canvas.pack()
+    
+    # Get window handle after it's created
+    root.update()
+    hwnd = int(root.wm_frame(), 16)
+    
+    # Make window layered and click-through
+    try:
+        # Set window as layered
+        win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE,
+                              win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE) | 
+                              win32con.WS_EX_LAYERED | win32con.WS_EX_TRANSPARENT)
+        
+        # Set black as transparent color
+        win32gui.SetLayeredWindowAttributes(hwnd, 0x000000, 0, win32con.LWA_COLORKEY)
+        
+        print("Window transparency enabled")
+        
+    except Exception as e:
+        print(f"Transparency setup failed: {e}")
+    
+    # Load and scale frames
     frames = []
-    for frame_file in frame_files:
-        try:
-            img = Image.open(frame_file)
-            
-            # Convert to RGBA if not already
-            if img.mode != 'RGBA':
-                img = img.convert('RGBA')
-            
-            # Enhance contrast and brightness for screen effect
-            from PIL import ImageEnhance
-            
-            # Increase contrast for more punch
-            contrast = ImageEnhance.Contrast(img)
-            img = contrast.enhance(1.3)
-            
-            # Increase brightness slightly
-            brightness = ImageEnhance.Brightness(img)
-            img = brightness.enhance(1.1)
-            
-            # Increase saturation for more vivid colors
-            saturation = ImageEnhance.Color(img)
-            img = saturation.enhance(1.2)
-            
-            # Resize to screen while maintaining aspect ratio
-            img = img.resize((screen_width, screen_height), Image.Resampling.LANCZOS)
-            frames.append(ImageTk.PhotoImage(img))
-        except Exception as e:
-            print(f"Error loading frame {frame_file}: {e}")
+    print("Loading and scaling frames...")
     
-    if not frames:
-        print("ERROR: No frames could be loaded")
-        root.destroy()
+    try:
+        from PIL import Image, ImageTk
+        print("Using PIL for scaling...")
+        
+        for i, frame_file in enumerate(frame_files):
+            try:
+                # Load with PIL and scale to screen size
+                pil_img = Image.open(frame_file)
+                # Scale to fill screen
+                pil_img = pil_img.resize((screen_width, screen_height), Image.Resampling.LANCZOS)
+                img = ImageTk.PhotoImage(pil_img)
+                frames.append(img)
+                
+                if i % 20 == 0:
+                    print(f"Loaded {i+1}/{len(frame_files)} frames...")
+                    
+            except Exception as e:
+                print(f"Failed to load {frame_file}: {e}")
+                break
+        
+        print(f"Loaded {len(frames)} frames")
+        
+    except ImportError:
+        print("PIL not available - using tkinter fallback")
+        # Fallback to tkinter without scaling
+        for i, frame_file in enumerate(frame_files):
+            try:
+                img = tk.PhotoImage(file=frame_file)
+                frames.append(img)
+                
+                if i % 20 == 0:
+                    print(f"Loaded {i+1}/{len(frame_files)} frames...")
+                    
+            except Exception as e:
+                print(f"Failed to load {frame_file}: {e}")
+                break
+        
+        print(f"Loaded {len(frames)} frames")
+        
+    except Exception as e:
+        print(f"Frame loading failed: {e}")
         return False
     
-    print(f"Loaded {len(frames)} frames")
+    if not frames:
+        return False
     
-    # Play audio in separate thread
+    # Start audio and video simultaneously
     def play_audio():
         try:
-            # Use PowerShell to play MP3 (more reliable than winsound for MP3)
-            import subprocess
-            subprocess.run([
-                "powershell", "-c", 
-                f"Add-Type -AssemblyName presentationCore; " +
-                f"$player = New-Object System.Windows.Media.MediaPlayer; " +
-                f"$player.Open([System.Uri]::new('{audio_file.as_uri()}')); " +
-                f"$player.Play(); " +
-                f"Start-Sleep -Seconds 5; " +
-                f"$player.Close()"
-            ], capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
+            if audio_file.exists():
+                subprocess.run([
+                    "powershell", "-c", 
+                    "Add-Type -AssemblyName presentationCore; " +
+                    "$player = New-Object System.Windows.Media.MediaPlayer; " +
+                    f"$player.Open([System.Uri]::new('{audio_file.as_uri()}')); " +
+                    "$player.Play(); " +
+                    "Start-Sleep -Seconds 5; " +
+                    "$player.Close()"
+                ], capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
         except Exception as e:
-            print(f"Audio playback error: {e}")
+            print(f"Audio failed: {e}")
     
+    # Start audio immediately
     audio_thread = threading.Thread(target=play_audio, daemon=True)
     audio_thread.start()
     
-    # Animation variables
+    # Animation
     current_frame = 0
-    frame_delay = 1000 // 30  # 30 FPS in milliseconds
+    start_time = time.time()
     
-    def update_frame():
+    def animate():
         nonlocal current_frame
+        
         if current_frame < len(frames):
-            label.configure(image=frames[current_frame])
+            canvas.delete("all")
+            # Draw scaled image at top-left to fill screen
+            canvas.create_image(0, 0, anchor='nw', image=frames[current_frame])
             current_frame += 1
-            root.after(frame_delay, update_frame)
+            # 24fps = ~42ms per frame
+            root.after(42, animate)
         else:
-            # Animation finished, close window
-            root.after(500, root.destroy)  # Small delay before closing
+            total_time = time.time() - start_time
+            print(f"Animation completed in {total_time:.2f}s")
+            root.destroy()
     
-    # Start animation
-    update_frame()
+    print("Starting synchronized playback...")
+    animate()
     
-    # Auto-close failsafe (in case animation doesn't finish properly)
-    root.after(8000, root.destroy)  # Close after 8 seconds max
+    # Auto-close after 6 seconds
+    root.after(6000, root.destroy)
     
-    # Run the animation
     try:
         root.mainloop()
-        print("Explosion overlay completed")
         return True
     except Exception as e:
         print(f"Overlay error: {e}")
         return False
 
 if __name__ == "__main__":
-    print("Starting explosion overlay...")
     success = play_explosion_overlay()
     print(f"Result: {'SUCCESS' if success else 'FAILED'}")

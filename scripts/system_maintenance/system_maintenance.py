@@ -15,32 +15,32 @@ def trigger_windows_toast():
         {
             "title": "System Maintenance",
             "message": "Running scheduled system cleanup... This may take a few minutes.",
-            "app": "Windows System"
+            "icon": "⚙️"
         },
         {
             "title": "Disk Cleanup",
             "message": "Clearing temporary files and optimizing storage space.",
-            "app": "Storage Sense"
+            "icon": "💾"
         },
         {
-            "title": "System Optimization",
+            "title": "System Optimization", 
             "message": "Defragmenting drives and optimizing performance.",
-            "app": "Windows Maintenance"
+            "icon": "🚀"
         },
         {
             "title": "Registry Cleanup",
             "message": "Scanning and repairing registry entries.",
-            "app": "System Tools"
+            "icon": "🔧"
         },
         {
             "title": "Update Check",
             "message": "Checking for critical system updates.",
-            "app": "Windows Update"
+            "icon": "🔄"
         },
         {
             "title": "Memory Optimization",
             "message": "Clearing system cache and optimizing memory usage.",
-            "app": "Task Manager"
+            "icon": "💻"
         }
     ]
     
@@ -48,96 +48,77 @@ def trigger_windows_toast():
         # Pick a random maintenance message
         toast = random.choice(maintenance_toasts)
         
-        # Use Windows' built-in toast notification system via PowerShell
-        ps_script = f'''
-[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
-[Windows.UI.Notifications.ToastNotification, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
-[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null
+        # Create PowerShell script for BurntToast module
+        ps_script = '''
+# Install BurntToast if not already installed
+if (!(Get-Module -ListAvailable -Name BurntToast)) {
+    Install-Module -Name BurntToast -Force -Scope CurrentUser
+}
+Import-Module BurntToast -Force
 
-$template = @"
-<toast>
-    <visual>
-        <binding template="ToastGeneric">
-            <text>{toast['title']}</text>
-            <text>{toast['message']}</text>
-        </binding>
-    </visual>
-    <audio src="ms-winsoundevent:Notification.Default" />
-</toast>
-"@
-
-$xml = New-Object Windows.Data.Xml.Dom.XmlDocument
-$xml.LoadXml($template)
-
-$toast = [Windows.UI.Notifications.ToastNotification]::new($xml)
-$toast.Tag = "SystemMaintenance"
-$toast.Group = "System"
-
-$notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("{toast['app']}")
-$notifier.Show($toast)
+# Show the toast notification
+New-BurntToastNotification -Text "''' + toast['title'] + '''", "''' + toast['message'] + '''" -AppLogo "C:\\Windows\\System32\\UserAccountControlSettings.exe"
 '''
         
-        # Execute PowerShell script for real Windows toast
+        # Try BurntToast first
         result = subprocess.run([
-            "powershell", "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass", "-Command", ps_script
+            "powershell", "-ExecutionPolicy", "Bypass", "-Command", ps_script
+        ], capture_output=True, text=True, timeout=15)
+        
+        if result.returncode != 0:
+            # Fallback to simple notification
+            print("BurntToast failed, using fallback notification method...")
+            
+            # Use Windows MSG command as fallback
+            msg_command = f'msg * /TIME:10 "{toast["title"]}\\n\\n{toast["message"]}"'
+            subprocess.run(msg_command, shell=True, capture_output=True)
+            
+            # Also try Windows 10 toast via PowerShell without dependencies
+            simple_ps = f'''
+Add-Type -AssemblyName System.Windows.Forms
+$notification = New-Object System.Windows.Forms.NotifyIcon
+$notification.Icon = [System.Drawing.SystemIcons]::Information
+$notification.BalloonTipIcon = "Info"
+$notification.BalloonTipTitle = "{toast['title']}"
+$notification.BalloonTipText = "{toast['message']}"
+$notification.Visible = $true
+$notification.ShowBalloonTip(10000)
+Start-Sleep -Seconds 10
+$notification.Dispose()
+'''
+            subprocess.run([
+                "powershell", "-ExecutionPolicy", "Bypass", "-Command", simple_ps
+            ], capture_output=True, text=True, timeout=15)
+        
+        print(f"Displayed notification: {toast['title']} - {toast['message']}")
+        
+        # Show follow-up notification after delay
+        time.sleep(3)
+        
+        follow_up_ps = '''
+Add-Type -AssemblyName System.Windows.Forms
+$notification = New-Object System.Windows.Forms.NotifyIcon
+$notification.Icon = [System.Drawing.SystemIcons]::Information
+$notification.BalloonTipIcon = "Info"
+$notification.BalloonTipTitle = "Maintenance Complete"
+$notification.BalloonTipText = "System maintenance tasks completed successfully."
+$notification.Visible = $true
+$notification.ShowBalloonTip(5000)
+Start-Sleep -Seconds 5
+$notification.Dispose()
+'''
+        
+        subprocess.run([
+            "powershell", "-ExecutionPolicy", "Bypass", "-Command", follow_up_ps
         ], capture_output=True, text=True, timeout=10)
         
-        if result.returncode == 0:
-            print(f"Successfully displayed Windows toast: {toast['title']} - {toast['message']}")
-            
-            # Show a second toast after a delay for more impact
-            time.sleep(2)
-            
-            follow_up = {
-                "title": "Maintenance Complete",
-                "message": "System maintenance tasks completed successfully.",
-                "app": "Windows System"
-            }
-            
-            ps_script2 = f'''
-[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
-[Windows.UI.Notifications.ToastNotification, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
-[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null
-
-$template = @"
-<toast>
-    <visual>
-        <binding template="ToastGeneric">
-            <text>{follow_up['title']}</text>
-            <text>{follow_up['message']}</text>
-        </binding>
-    </visual>
-    <audio src="ms-winsoundevent:Notification.Looping.Alarm" />
-</toast>
-"@
-
-$xml = New-Object Windows.Data.Xml.Dom.XmlDocument
-$xml.LoadXml($template)
-
-$toast = [Windows.UI.Notifications.ToastNotification]::new($xml)
-$toast.Tag = "MaintenanceComplete"
-$toast.Group = "System"
-
-$notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("{follow_up['app']}")
-$notifier.Show($toast)
-'''
-            
-            subprocess.run([
-                "powershell", "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass", "-Command", ps_script2
-            ], capture_output=True, text=True, timeout=10)
-            
-            return True
-        else:
-            print(f"Toast notification failed. Return code: {result.returncode}")
-            if result.stderr:
-                print(f"PowerShell stderr: {result.stderr}")
-            return False
+        return True
             
     except subprocess.TimeoutExpired:
-        print("Toast notification timeout")
+        print("Notification timeout")
         return False
     except Exception as e:
-        print(f"Error showing toast notification: {e}")
+        print(f"Error showing notification: {e}")
         return False
 
 if __name__ == "__main__":
