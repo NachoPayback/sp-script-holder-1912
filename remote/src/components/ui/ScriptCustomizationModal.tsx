@@ -15,6 +15,7 @@ interface ScriptCustomizationModalProps {
   currentColor?: string;
   currentPositionX?: number;
   currentPositionY?: number;
+  currentImageScale?: number;
   onSave: () => void;
 }
 
@@ -300,6 +301,7 @@ export const ScriptCustomizationModal: React.FC<ScriptCustomizationModalProps> =
   currentColor = theme.colors.primary,
   currentPositionX = 0,
   currentPositionY = 0,
+  currentImageScale = 100,
   onSave
 }) => {
   const [friendlyName, setFriendlyName] = useState(currentFriendlyName || scriptName);
@@ -307,7 +309,7 @@ export const ScriptCustomizationModal: React.FC<ScriptCustomizationModalProps> =
   const [color, setColor] = useState(currentColor);
   const [positionX, setPositionX] = useState(currentPositionX);
   const [positionY, setPositionY] = useState(currentPositionY);
-  const [imageScale, setImageScale] = useState(100); // Scale percentage
+  const [imageScale, setImageScale] = useState(currentImageScale); // Scale percentage
   const [isSaving, setIsSaving] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
   const { showSuccess, showError } = useToast();
@@ -320,8 +322,9 @@ export const ScriptCustomizationModal: React.FC<ScriptCustomizationModalProps> =
       setColor(currentColor || theme.colors.primary);
       setPositionX(currentPositionX || 0);
       setPositionY(currentPositionY || 0);
+      setImageScale(currentImageScale || 100);
     }
-  }, [isOpen, scriptName, currentFriendlyName, currentImageUrl, currentColor, currentPositionX, currentPositionY]);
+  }, [isOpen, scriptName, currentFriendlyName, currentImageUrl, currentColor, currentPositionX, currentPositionY, currentImageScale]);
 
   const adjustPosition = (direction: 'up' | 'down' | 'left' | 'right') => {
     const step = 10;
@@ -384,7 +387,8 @@ export const ScriptCustomizationModal: React.FC<ScriptCustomizationModalProps> =
         imageUrl || undefined,
         color,
         Math.round(positionX),
-        Math.round(positionY)
+        Math.round(positionY),
+        imageScale
       );
       
       console.log('Save result:', result);

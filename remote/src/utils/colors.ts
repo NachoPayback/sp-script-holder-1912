@@ -1,17 +1,32 @@
 /**
  * Generate distinct colors using golden ratio for better variety
- * This replaces the old (index * 137.5) % 360 approach
+ * Returns hex colors for better CSS filter compatibility
  */
 export const generateScriptColor = (index: number): string => {
   const goldenRatioConjugate = 0.618033988749895;
   const hue = (index * goldenRatioConjugate * 360) % 360;
   
-  // Vary saturation and lightness slightly for more visual variety
-  const saturation = 65 + (index % 3) * 10; // 65%, 75%, 85%
-  const lightness = 45 + (index % 2) * 10;  // 45%, 55%
+  // Vary saturation and lightness for better glow visibility
+  const saturation = 85 + (index % 3) * 5; // 85%, 90%, 95%
+  const lightness = 60 + (index % 2) * 5;  // 60%, 65%
   
-  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  // Convert HSL to RGB then to hex for better filter support
+  return hslToHex(hue, saturation, lightness);
 };
+
+/**
+ * Convert HSL to hex color for better CSS filter compatibility
+ */
+function hslToHex(h: number, s: number, l: number): string {
+  l /= 100;
+  const a = s * Math.min(l, 1 - l) / 100;
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color).toString(16).padStart(2, '0');
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
 
 /**
  * Convert color to various formats

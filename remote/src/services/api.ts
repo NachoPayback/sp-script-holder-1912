@@ -60,7 +60,7 @@ export const hubApi = {
     return response.json();
   },
 
-  saveFriendlyName: async (scriptName: string, friendlyName: string, description?: string, imageUrl?: string, customColor?: string, positionX?: number, positionY?: number): Promise<{ success: boolean; message?: string }> => {
+  saveFriendlyName: async (scriptName: string, friendlyName: string, description?: string, imageUrl?: string, customColor?: string, positionX?: number, positionY?: number, imageScale?: number): Promise<{ success: boolean; message?: string }> => {
     const response = await fetch(`${API_BASE}/api/script-friendly-names`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -71,7 +71,8 @@ export const hubApi = {
         image_url: imageUrl,
         custom_color: customColor,
         position_x: positionX,
-        position_y: positionY
+        position_y: positionY,
+        image_scale: imageScale
       })
     });
     return response.json();

@@ -11,6 +11,7 @@ interface HubSettingsModalProps {
   currentShowNames: boolean;
   onSave: (mode: 'shared' | 'assigned', showNames: boolean, enableTimer: boolean, timerMinutes: number) => void;
   onShuffleScripts: () => void;
+  onRefreshScripts: () => void;
 }
 
 const ModalOverlay = styled.div<{ $isOpen: boolean }>`
@@ -141,21 +142,22 @@ const NumberInput = styled.input`
   }
 `;
 
-const ActionButton = styled.button`
+const ActionButton = styled.button<{ $variant?: 'primary' | 'danger' }>`
   width: 100%;
   padding: ${theme.spacing.md};
-  background: rgba(239, 68, 68, 0.2);
-  border: 1px solid #ef4444;
-  color: #ef4444;
+  background: ${props => props.$variant === 'danger' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)'};
+  border: 1px solid ${props => props.$variant === 'danger' ? '#ef4444' : '#3b82f6'};
+  color: ${props => props.$variant === 'danger' ? '#ef4444' : '#3b82f6'};
   border-radius: ${theme.borderRadius.md};
   font-family: ${theme.fonts.family};
   font-weight: ${theme.fonts.weights.bold};
   text-transform: uppercase;
   cursor: pointer;
   transition: all ${theme.animations.fast} ${theme.animations.easing};
+  margin-bottom: ${theme.spacing.sm};
   
   &:hover {
-    background: rgba(239, 68, 68, 0.3);
+    background: ${props => props.$variant === 'danger' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(59, 130, 246, 0.3)'};
     transform: translateY(-2px);
   }
 `;
@@ -196,7 +198,8 @@ export const HubSettingsModal: React.FC<HubSettingsModalProps> = ({
   currentMode,
   currentShowNames,
   onSave,
-  onShuffleScripts
+  onShuffleScripts,
+  onRefreshScripts
 }) => {
   const [mode, setMode] = useState<'shared' | 'assigned'>(currentMode);
   const [showNames, setShowNames] = useState(currentShowNames);
@@ -284,14 +287,17 @@ export const HubSettingsModal: React.FC<HubSettingsModalProps> = ({
           </CheckboxLabel>
         </SettingGroup>
 
-        {mode === 'assigned' && (
-          <SettingGroup>
-            <SettingLabel>Assignment Actions</SettingLabel>
-            <ActionButton onClick={onShuffleScripts}>
+        <SettingGroup>
+          <SettingLabel>Hub Actions</SettingLabel>
+          <ActionButton onClick={onRefreshScripts}>
+            🔄 Refresh Scripts from GitHub
+          </ActionButton>
+          {mode === 'assigned' && (
+            <ActionButton $variant="danger" onClick={onShuffleScripts}>
               🔀 Shuffle Script Assignments
             </ActionButton>
-          </SettingGroup>
-        )}
+          )}
+        </SettingGroup>
 
         <ButtonRow>
           <Button onClick={onClose}>Cancel</Button>

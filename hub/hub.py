@@ -498,10 +498,7 @@ class HubWorker:
             # Rediscover scripts (this will install dependencies)
             self.available_scripts = self.discover_scripts()
 
-            # Clear existing scripts for this hub
-            self.supabase.table("hub_scripts").delete().eq("hub_id", self.hub_id).execute()
-
-            # Insert current scripts in batch
+            # Upsert current scripts in batch (handles duplicates gracefully)
             if self.available_scripts:
                 script_records = []
                 for script_name in self.available_scripts:
@@ -513,8 +510,11 @@ class HubWorker:
                         "friendly_name": friendly_name
                     })
                 
-                # Single batch insert instead of individual calls
-                self.supabase.table("hub_scripts").insert(script_records).execute()
+                # Use upsert to handle existing records gracefully
+                self.supabase.table("hub_scripts").upsert(
+                    script_records,
+                    on_conflict="hub_id,script_name"
+                ).execute()
 
         except Exception as e:
             self.logger.error(f"Error updating hub scripts: {e}")

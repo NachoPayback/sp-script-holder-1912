@@ -32,5 +32,6 @@ export interface FriendlyName {
   custom_color?: string;
   position_x?: number;
   position_y?: number;
+  image_scale?: number;
   updated_at: string;
 }

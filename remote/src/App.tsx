@@ -358,8 +358,11 @@ const ActivityFeedContainer = styled.div`
   padding: ${theme.spacing.md};
   border: 1px solid rgba(148, 163, 184, 0.1);
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;
   min-height: 200px;
+  max-height: 400px;
+  display: flex;
+  flex-direction: column;
 `;
 
 function App() {
@@ -369,7 +372,7 @@ function App() {
   const [selectedHub, setSelectedHub] = useState<Hub | null>(null);
   const [scripts, setScripts] = useState<HubScript[]>([]);
   const [assignment, setAssignment] = useState<Assignment | null>(null);
-  const [friendlyNames, setFriendlyNames] = useState<Record<string, { friendly_name: string; image_url?: string; custom_color?: string; position_x?: number; position_y?: number }>>({});
+  const [friendlyNames, setFriendlyNames] = useState<Record<string, { friendly_name: string; image_url?: string; custom_color?: string; position_x?: number; position_y?: number; image_scale?: number }>>({});
   const [activity, setActivity] = useState<any[]>([]);
   const [connectedUsers, setConnectedUsers] = useState<any[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -407,12 +410,13 @@ function App() {
 
   // Update activity feed from real-time script commands
   useEffect(() => {
+    console.log('Activity feed update - scriptCommands:', scriptCommands);
     const newActivity = scriptCommands.map((cmd: any) => ({
       id: cmd.id,
-      user: cmd.user_id,
-      action: `Executed ${cmd.script_name}`,
-      status: cmd.status,
-      timestamp: new Date(cmd.created_at).toLocaleTimeString(),
+      user: cmd.user_id || 'Unknown',
+      action: `Executed ${cmd.script_name || 'Unknown Script'}`,
+      status: cmd.status === 'completed' ? 'success' : cmd.status === 'failed' ? 'error' : 'pending' as const,
+      timestamp: cmd.created_at ? new Date(cmd.created_at).toLocaleTimeString() : new Date().toLocaleTimeString(),
       commandId: cmd.id
     }));
     setActivity(newActivity.slice(0, 50)); // Keep last 50 items
@@ -436,17 +440,17 @@ function App() {
   const handleScriptExecute = async (scriptName: string) => {
     if (!selectedHub || !user) return;
 
-    // Handle fake "mute_call" script
-    if (scriptName === 'mute_call') {
-      setFakeCallModalOpen(true);
+    // Check if we're in edit mode and user is admin first
+    if (isEditMode && isUserAdmin(user)) {
+      // Open customization for ALL scripts including mute_call
+      setSelectedScriptForEdit(scriptName);
+      setScriptCustomizationModalOpen(true);
       return;
     }
 
-    // Check if we're in edit mode and user is admin
-    if (isEditMode && isUserAdmin(user)) {
-      // Open customization for this specific script
-      setSelectedScriptForEdit(scriptName);
-      setScriptCustomizationModalOpen(true);
+    // Handle fake "mute_call" script
+    if (scriptName === 'mute_call') {
+      setFakeCallModalOpen(true);
       return;
     }
 
@@ -492,10 +496,23 @@ function App() {
       const scriptsResponse = await hubApi.getHubScripts(hub.id);
       if (scriptsResponse.success && scriptsResponse.scripts) {
         // Add fake "Mute the Call" script to the list
-        const scriptsWithFake = [...scriptsResponse.scripts, 'mute_call'];
+        const fakeScript: HubScript = {
+          id: 'fake_mute_call',
+          hub_id: hub.id,
+          script_name: 'mute_call',
+          friendly_name: 'Mute the Call'
+        };
+        const scriptsWithFake = [...scriptsResponse.scripts, fakeScript];
         setScripts(scriptsWithFake);
       } else {
-        setScripts(['mute_call']); // Always include fake script even if no real scripts
+        // Always include fake script even if no real scripts
+        const fakeScript: HubScript = {
+          id: 'fake_mute_call',
+          hub_id: hub.id,
+          script_name: 'mute_call',
+          friendly_name: 'Mute the Call'
+        };
+        setScripts([fakeScript]);
       }
 
       // Load assignment if in assigned mode
@@ -569,6 +586,12 @@ function App() {
   const handleShuffleScripts = () => {
     // This would normally shuffle script assignments via API
     console.log('Shuffle scripts requested');
+  };
+
+  const handleRefreshScripts = () => {
+    if (selectedHub) {
+      loadHubData(selectedHub);
+    }
   };
 
   if (!user) {
@@ -655,11 +678,6 @@ function App() {
                         {isEditMode ? 'EXIT EDIT' : 'EDIT MODE'}
                       </EditModeToggle>
                     )}
-                    <RefreshButton onClick={() => {
-                      if (selectedHub) {
-                        loadHubData(selectedHub);
-                      }
-                    }}>🔄 REFRESH SCRIPTS</RefreshButton>
                     <SettingsButton onClick={() => {
                       setHubSettingsModalOpen(true);
                     }}>⚙ HUB SETTINGS</SettingsButton>
@@ -727,6 +745,7 @@ function App() {
           currentShowNames={selectedHub?.show_script_names || false}
           onSave={handleHubSettingsUpdate}
           onShuffleScripts={handleShuffleScripts}
+          onRefreshScripts={handleRefreshScripts}
         />
         
         <ScriptCustomizationModal
@@ -741,6 +760,7 @@ function App() {
           currentColor={selectedScriptForEdit ? friendlyNames[selectedScriptForEdit]?.custom_color : ''}
           currentPositionX={selectedScriptForEdit ? friendlyNames[selectedScriptForEdit]?.position_x : 0}
           currentPositionY={selectedScriptForEdit ? friendlyNames[selectedScriptForEdit]?.position_y : 0}
+          currentImageScale={selectedScriptForEdit ? friendlyNames[selectedScriptForEdit]?.image_scale : 100}
           onSave={handleFriendlyNamesUpdate}
         />
         

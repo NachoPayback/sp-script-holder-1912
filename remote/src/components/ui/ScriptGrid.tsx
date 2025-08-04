@@ -10,18 +10,18 @@ interface ScriptGridProps {
   assignment?: Assignment;
   mode: 'shared' | 'assigned';
   showScriptNames: boolean;
-  friendlyNames: Record<string, { friendly_name: string; image_url?: string; custom_color?: string; position_x?: number; position_y?: number }>;
+  friendlyNames: Record<string, { friendly_name: string; image_url?: string; custom_color?: string; position_x?: number; position_y?: number; image_scale?: number }>;
   onScriptExecute: (scriptName: string) => void;
   isEditMode?: boolean;
 }
 
 const GridContainer = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: ${theme.spacing.xxl};
-  padding: ${theme.spacing.xxl};
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: ${theme.spacing.xl};  /* Reduced from xxl */
+  padding: ${theme.spacing.xl};  /* Reduced from xxl */
   justify-items: center;
-  max-width: 1400px;
+  max-width: 1200px;  /* Reduced from 1400px */
   margin: 0 auto;
   position: relative;
   
@@ -76,6 +76,7 @@ export const ScriptGrid: React.FC<ScriptGridProps> = ({
           imageUrl={friendlyNames[assignment.assigned_script]?.image_url}
           imagePositionX={friendlyNames[assignment.assigned_script]?.position_x || 0}
           imagePositionY={friendlyNames[assignment.assigned_script]?.position_y || 0}
+          imageScale={friendlyNames[assignment.assigned_script]?.image_scale || 100}
           showName={showScriptNames}
           onClick={() => onScriptExecute(assignment.assigned_script)}
           isEditMode={isEditMode}
@@ -99,6 +100,7 @@ export const ScriptGrid: React.FC<ScriptGridProps> = ({
         const imageUrl = friendlyNames[scriptName]?.image_url;
         const imagePositionX = friendlyNames[scriptName]?.position_x || 0;
         const imagePositionY = friendlyNames[scriptName]?.position_y || 0;
+        const imageScale = friendlyNames[scriptName]?.image_scale || 100;
         
         return (
           <HexagonButton
@@ -109,6 +111,7 @@ export const ScriptGrid: React.FC<ScriptGridProps> = ({
             imageUrl={imageUrl}
             imagePositionX={imagePositionX}
             imagePositionY={imagePositionY}
+            imageScale={imageScale}
             showName={true} // Always show names in shared mode
             onClick={() => onScriptExecute(scriptName)}
             isEditMode={isEditMode}

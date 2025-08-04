@@ -9,6 +9,7 @@ interface HexagonButtonProps {
   imageUrl?: string;
   imagePositionX?: number; // -50 to 50
   imagePositionY?: number; // -50 to 50
+  imageScale?: number; // 50 to 200
   showName?: boolean;
   onClick: () => void;
   className?: string;
@@ -70,17 +71,15 @@ const HexagonPath = styled.path<{ $color: string }>`
   fill: ${theme.colors.surface};
   stroke: ${props => props.$color};
   stroke-width: 16;
-  filter: 
-    drop-shadow(0 0 20px ${props => props.$color}) 
-    drop-shadow(0 0 40px ${props => props.$color}60);
+  filter: drop-shadow(0 0 2px ${props => props.$color}40);
   transition: all ${theme.animations.normal} ${theme.animations.easing};
   
   ${ButtonContainer}:hover & {
     fill: ${theme.colors.surfaceLight};
     stroke-width: 20;
     filter: 
-      drop-shadow(0 0 30px ${props => props.$color}) 
-      drop-shadow(0 0 60px ${props => props.$color}80);
+      drop-shadow(0 0 20px ${props => props.$color}) 
+      drop-shadow(0 0 40px ${props => props.$color}80);
   }
 `;
 
@@ -130,16 +129,17 @@ const ImageContainer = styled.div`
   z-index: 5;
 `;
 
-const HexagonImage = styled.img<{ $color: string; $positionX: number; $positionY: number }>`
-  width: 100%;
-  height: 100%;
+const HexagonImage = styled.img<{ $color: string; $positionX: number; $positionY: number; $scale: number }>`
+  width: ${props => props.$scale}%;
+  height: ${props => props.$scale}%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   object-fit: cover;
   object-position: ${props => `${50 - props.$positionX}% ${50 - props.$positionY}%`};
   clip-path: polygon(30% 0%, 70% 0%, 100% 50%, 70% 100%, 30% 100%, 0% 50%);
-  /* No color mapping - user colors their own icons */
-  filter: 
-    drop-shadow(0 0 10px ${props => props.$color}60)
-    drop-shadow(0 0 20px ${props => props.$color}40);
+  filter: drop-shadow(0 0 2px ${props => props.$color}30);
   transition: all ${theme.animations.fast} ${theme.animations.easing};
   
   ${ButtonContainer}:hover & {
@@ -160,6 +160,7 @@ export const HexagonButton: React.FC<HexagonButtonProps> = ({
   imageUrl,
   imagePositionX = 0,
   imagePositionY = 0,
+  imageScale = 100,
   showName = false,
   onClick,
   className,
@@ -193,6 +194,7 @@ export const HexagonButton: React.FC<HexagonButtonProps> = ({
             $color={color}
             $positionX={imagePositionX}
             $positionY={imagePositionY}
+            $scale={imageScale}
           />
         </ImageContainer>
       ) : (
