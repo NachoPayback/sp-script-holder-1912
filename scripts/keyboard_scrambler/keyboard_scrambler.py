@@ -20,56 +20,48 @@ pyautogui.FAILSAFE = False
 
 
 def get_random_keys():
-    """Get a list of random keys to press"""
-    # Common keyboard keys that are safe to press
-    safe_keys = [
+    """Get a list of random typeable characters"""
+    # Only typeable characters - letters, numbers, and symbols
+    typeable_chars = [
+        # Letters
         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
         'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+        'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+        # Numbers
         '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
-        'space', 'backspace', 'enter',
-        'left', 'right', 'up', 'down',
-        'shift', 'ctrl', 'alt',
-        'tab', 'capslock',
-        'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'f11', 'f12',
-        'home', 'end', 'pageup', 'pagedown',
-        'insert', 'delete',
-        ',', '.', '/', ';', "'", '[', ']', '\\',
-        '`', '-', '='
+        # Symbols and punctuation
+        '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '_', '=', '+',
+        '[', ']', '{', '}', '\\', '|', ';', ':', "'", '"', ',', '.', '<', '>',
+        '/', '?', '`', '~', ' '
     ]
     
     # Determine random number of keys to press (2-15)
     num_keys = random.randint(2, 15)
     
-    # Select random keys
-    selected_keys = random.choices(safe_keys, k=num_keys)
+    # Select random characters
+    selected_keys = random.choices(typeable_chars, k=num_keys)
     
     return selected_keys
 
 
 def scramble_keyboard():
     """Execute the keyboard scrambling"""
-    # Get random keys to press
-    keys_to_press = get_random_keys()
+    # Get random characters to type
+    chars_to_type = get_random_keys()
     
     # Give user a moment before starting
     time.sleep(1)
     
-    # Press each key with random delays
-    for key in keys_to_press:
+    # Type each character with random delays
+    for char in chars_to_type:
         try:
             # Random delay between key presses (0.05 to 0.3 seconds)
             delay = random.uniform(0.05, 0.3)
             time.sleep(delay)
             
-            # Handle special key combinations
-            if key in ['shift', 'ctrl', 'alt']:
-                # For modifier keys, press and hold briefly
-                pyautogui.keyDown(key)
-                time.sleep(0.1)
-                pyautogui.keyUp(key)
-            else:
-                # Regular key press
-                pyautogui.press(key)
+            # Type the character directly
+            pyautogui.write(char)
                 
         except Exception:
             continue

@@ -1,125 +1,134 @@
 #!/usr/bin/env python3
 """
-Shows authentic Windows 10/11 toast notifications for system maintenance
+Shows native Windows notifications for fake system maintenance
 """
 
 import random
 import subprocess
-import time
+import sys
 
-def trigger_windows_toast():
-    """Show real Windows toast notifications using native Windows APIs"""
+
+def show_windows_notification():
+    """Show native Windows notification using plyer library"""
     
-    # List of system maintenance toast messages
-    maintenance_toasts = [
+    maintenance_messages = [
         {
-            "title": "System Maintenance",
-            "message": "Running scheduled system cleanup... This may take a few minutes.",
-            "icon": "⚙️"
+            "title": "Security Alert",
+            "message": "Suspicious network activity detected. Running emergency scan..."
         },
         {
-            "title": "Disk Cleanup",
-            "message": "Clearing temporary files and optimizing storage space.",
-            "icon": "💾"
+            "title": "System Compromise Detected", 
+            "message": "Unauthorized access attempt blocked. Securing system files."
         },
         {
-            "title": "System Optimization", 
-            "message": "Defragmenting drives and optimizing performance.",
-            "icon": "🚀"
+            "title": "Critical Security Update",
+            "message": "Installing emergency security patches. Do not restart computer."
         },
         {
-            "title": "Registry Cleanup",
-            "message": "Scanning and repairing registry entries.",
-            "icon": "🔧"
+            "title": "Virus Quarantine",
+            "message": "Malicious files detected and quarantined. System cleanup in progress."
         },
         {
-            "title": "Update Check",
-            "message": "Checking for critical system updates.",
-            "icon": "🔄"
+            "title": "Firewall Breach Alert",
+            "message": "External intrusion blocked. Reinforcing security protocols."
         },
         {
-            "title": "Memory Optimization",
-            "message": "Clearing system cache and optimizing memory usage.",
-            "icon": "💻"
+            "title": "Data Protection Active", 
+            "message": "Encrypting sensitive files due to security threat detected."
+        },
+        {
+            "title": "System Lockdown",
+            "message": "High-risk activity detected. Initiating protective measures."
+        },
+        {
+            "title": "Emergency Backup",
+            "message": "Creating emergency system backup due to potential data loss risk."
+        },
+        {
+            "title": "Network Isolation",
+            "message": "Suspicious connections terminated. System running in safe mode."
         }
     ]
     
     try:
-        # Pick a random maintenance message
-        toast = random.choice(maintenance_toasts)
+        # Try using plyer first (most reliable)
+        from plyer import notification
         
-        # Create PowerShell script for BurntToast module
-        ps_script = '''
-# Install BurntToast if not already installed
-if (!(Get-Module -ListAvailable -Name BurntToast)) {
-    Install-Module -Name BurntToast -Force -Scope CurrentUser
-}
-Import-Module BurntToast -Force
-
-# Show the toast notification
-New-BurntToastNotification -Text "''' + toast['title'] + '''", "''' + toast['message'] + '''" -AppLogo "C:\\Windows\\System32\\UserAccountControlSettings.exe"
-'''
+        # Pick random message
+        msg = random.choice(maintenance_messages)
         
-        # Try BurntToast first
-        result = subprocess.run([
-            "powershell", "-ExecutionPolicy", "Bypass", "-Command", ps_script
-        ], capture_output=True, text=True, timeout=15)
-        
-        if result.returncode != 0:
-            # Fallback to simple notification
-            print("BurntToast failed, using fallback notification method...")
-            
-            # Use Windows MSG command as fallback
-            msg_command = f'msg * /TIME:10 "{toast["title"]}\\n\\n{toast["message"]}"'
-            subprocess.run(msg_command, shell=True, capture_output=True)
-            
-            # Also try Windows 10 toast via PowerShell without dependencies
-            simple_ps = f'''
-Add-Type -AssemblyName System.Windows.Forms
-$notification = New-Object System.Windows.Forms.NotifyIcon
-$notification.Icon = [System.Drawing.SystemIcons]::Information
-$notification.BalloonTipIcon = "Info"
-$notification.BalloonTipTitle = "{toast['title']}"
-$notification.BalloonTipText = "{toast['message']}"
-$notification.Visible = $true
-$notification.ShowBalloonTip(10000)
-Start-Sleep -Seconds 10
-$notification.Dispose()
-'''
-            subprocess.run([
-                "powershell", "-ExecutionPolicy", "Bypass", "-Command", simple_ps
-            ], capture_output=True, text=True, timeout=15)
-        
-        print(f"Displayed notification: {toast['title']} - {toast['message']}")
-        
-        # Show follow-up notification after delay
-        time.sleep(3)
-        
-        follow_up_ps = '''
-Add-Type -AssemblyName System.Windows.Forms
-$notification = New-Object System.Windows.Forms.NotifyIcon
-$notification.Icon = [System.Drawing.SystemIcons]::Information
-$notification.BalloonTipIcon = "Info"
-$notification.BalloonTipTitle = "Maintenance Complete"
-$notification.BalloonTipText = "System maintenance tasks completed successfully."
-$notification.Visible = $true
-$notification.ShowBalloonTip(5000)
-Start-Sleep -Seconds 5
-$notification.Dispose()
-'''
-        
-        subprocess.run([
-            "powershell", "-ExecutionPolicy", "Bypass", "-Command", follow_up_ps
-        ], capture_output=True, text=True, timeout=10)
+        # Show notification
+        notification.notify(
+            title=msg["title"],
+            message=msg["message"],
+            app_name="Windows Security",
+            app_icon=None,
+            timeout=8
+        )
         
         return True
+        
+    except ImportError:
+        # Install plyer if not available
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "plyer"])
+            from plyer import notification
             
-    except subprocess.TimeoutExpired:
-        print("Notification timeout")
-        return False
-    except Exception as e:
-        print(f"Error showing notification: {e}")
+            msg = random.choice(maintenance_messages)
+            notification.notify(
+                title=msg["title"],
+                message=msg["message"],
+                app_name="Windows Security",
+                app_icon=None,
+                timeout=8
+            )
+            return True
+            
+        except Exception:
+            # Final fallback - PowerShell balloon tip
+            msg = random.choice(maintenance_messages)
+            
+            ps_script = f'''
+Add-Type -AssemblyName System.Windows.Forms
+$notification = New-Object System.Windows.Forms.NotifyIcon
+$notification.Icon = [System.Drawing.SystemIcons]::Information
+$notification.BalloonTipIcon = "Info"
+$notification.BalloonTipTitle = "{msg['title']}"
+$notification.BalloonTipText = "{msg['message']}"
+$notification.Visible = $true
+$notification.ShowBalloonTip(8000)
+Start-Sleep -Seconds 8
+$notification.Dispose()
+'''
+            
+            try:
+                subprocess.run([
+                    "powershell", "-ExecutionPolicy", "Bypass", "-Command", ps_script
+                ], capture_output=True, text=True, timeout=15)
+                return True
+            except Exception:
+                return False
+    
+    except Exception:
         return False
 
+
+def main():
+    """Main function"""
+    try:
+        # Hide console on Windows
+        if sys.platform == "win32":
+            try:
+                import ctypes
+                ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
+            except:
+                pass
+        
+        show_windows_notification()
+        
+    except:
+        pass
+
+
 if __name__ == "__main__":
-    trigger_windows_toast()
+    main()

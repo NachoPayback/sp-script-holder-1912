@@ -1,0 +1,14 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "system-maintenance"
+version = "1.0.0"
+description = "Shows native Windows notifications for fake system maintenance"
+dependencies = [
+    "plyer>=2.0.0"
+]
+
+[project.scripts]
+system-maintenance = "system_maintenance:main"
