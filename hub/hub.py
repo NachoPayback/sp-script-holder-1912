@@ -21,6 +21,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+# Emergency shutdown hotkey support
+try:
+    import keyboard
+    HOTKEY_AVAILABLE = True
+except ImportError:
+    HOTKEY_AVAILABLE = False
+
 from supabase import Client, create_client
 from supabase._async.client import create_client as create_async_client
 import git
@@ -78,14 +85,20 @@ class HubWorker:
         # Status tracking
         self.running = True
         self.shutdown_requested = False
+        
+        # Emergency shutdown hotkey (Ctrl+Shift+Q)
+        self.emergency_hotkey = "ctrl+shift+q"
+        self.setup_emergency_shutdown()
 
         # Rich startup banner
+        hotkey_text = f"[red]Emergency Shutdown:[/red] [yellow]{self.emergency_hotkey.upper()}[/yellow]" if HOTKEY_AVAILABLE else "[dim]Emergency Shutdown: Not Available[/dim]"
         startup_panel = Panel.fit(
             f"[bold blue]SP CREW CONTROL V2 - HUB WORKER[/bold blue]\n"
             f"[dim]Pure script execution engine using Supabase real-time messaging[/dim]\n\n"
             f"[green]Machine ID:[/green] [cyan]{self.machine_id}[/cyan]\n"
             f"[green]Scripts Found:[/green] [yellow]{len(self.available_scripts)}[/yellow]\n"
-            f"[green]Dependencies Ready:[/green] [yellow]{sum(1 for ready in self.script_dependencies_ready.values() if ready)}[/yellow]",
+            f"[green]Dependencies Ready:[/green] [yellow]{sum(1 for ready in self.script_dependencies_ready.values() if ready)}[/yellow]\n"
+            f"{hotkey_text}",
             title="[bold green]INITIALIZATION COMPLETE[/bold green]",
             border_style="green"
         )
@@ -110,6 +123,27 @@ class HubWorker:
                 handlers=[RichHandler(rich_tracebacks=True, console=self.console)]
             )
         self.logger = logging.getLogger("hub")
+
+    def setup_emergency_shutdown(self):
+        """Setup emergency shutdown hotkey"""
+        if not HOTKEY_AVAILABLE:
+            self.logger.warning("Keyboard module not available - emergency shutdown disabled")
+            return
+            
+        def emergency_shutdown():
+            self.logger.warning("EMERGENCY SHUTDOWN TRIGGERED via Ctrl+Shift+Q")
+            self.console.print("\n[bold red]EMERGENCY SHUTDOWN ACTIVATED[/bold red]")
+            self.console.print("[yellow]Shutting down SP Crew Hub immediately...[/yellow]")
+            self.running = False
+            self.shutdown_requested = True
+            # Force exit after 2 seconds if graceful shutdown fails
+            threading.Timer(2.0, lambda: os._exit(0)).start()
+        
+        try:
+            keyboard.add_hotkey(self.emergency_hotkey, emergency_shutdown)
+            self.logger.info(f"Emergency shutdown hotkey registered: {self.emergency_hotkey.upper()}")
+        except Exception as e:
+            self.logger.warning(f"Could not register emergency hotkey: {e}")
 
     def install_script_dependencies(self, script_dir: Path) -> bool:
         """Install dependencies for a script using UV from pyproject.toml or inline script deps"""
@@ -920,11 +954,13 @@ class HubWorker:
         self.start_heartbeat_thread()
 
         # Rich ready panel
+        hotkey_ready = f"[red]Emergency Shutdown:[/red] [yellow]{self.emergency_hotkey.upper()}[/yellow]" if HOTKEY_AVAILABLE else "[dim]Emergency Shutdown: Not Available[/dim]"
         ready_panel = Panel.fit(
             f"[bold green]HUB WORKER IS ONLINE AND READY![/bold green]\n\n"
             f"[bright_green]Real-time messaging:[/bright_green] [green]Connected[/green]\n"
             f"[bright_green]Presence tracking:[/bright_green] [green]Active[/green]\n"
-            f"[bright_green]Status heartbeat:[/bright_green] [green]Running[/green]\n\n"
+            f"[bright_green]Status heartbeat:[/bright_green] [green]Running[/green]\n"
+            f"{hotkey_ready}\n\n"
             f"[dim]Waiting for script execution commands...[/dim]",
             title="[bold bright_green]READY FOR COMMANDS[/bold bright_green]",
             border_style="bright_green"
