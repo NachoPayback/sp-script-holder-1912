@@ -570,14 +570,10 @@ def get_asset_path(asset_name: str) -> str:
                 self.logger.info("Scripts are up to date with GitHub")
                 return  # Use existing scripts
             
-            self.logger.info("Scripts need updating - downloading from GitHub")
+            self.logger.info("Scripts need updating - syncing with GitHub")
             
-            # Remove old scripts if they exist
-            if scripts_dest.exists():
-                shutil.rmtree(scripts_dest)
-            
-            # Download scripts from GitHub
-            self.download_scripts_from_github(scripts_dest)
+            # Perform incremental sync instead of full download
+            self.sync_scripts_incrementally(scripts_dest)
             
             # Verify scripts were downloaded successfully
             if scripts_dest.exists() and any(scripts_dest.iterdir()):
@@ -609,6 +605,139 @@ def get_asset_path(asset_name: str) -> str:
                 
         except Exception as e:
             self.logger.error(f"Error setting up scripts from GitHub: {e}")
+
+    def sync_scripts_incrementally(self, scripts_dest: Path):
+        """Sync scripts incrementally - only ADD/UPDATE/DELETE what changed"""
+        try:
+            import requests
+            import zipfile
+            import tempfile
+            import hashlib
+            
+            # GitHub repository details
+            repo_url = "https://github.com/NachoPayback/sp-script-holder-1912"
+            scripts_url = f"{repo_url}/archive/refs/heads/master.zip"
+            
+            self.logger.info(f"Syncing scripts incrementally from {repo_url}")
+            
+            # Download the repository as ZIP to temp location
+            response = requests.get(scripts_url, timeout=30)
+            response.raise_for_status()
+            
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.zip') as tmp_file:
+                tmp_file.write(response.content)
+                zip_path = tmp_file.name
+            
+            # Extract to temporary location
+            temp_extract_dir = Path(tempfile.mkdtemp())
+            
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                zip_ref.extractall(temp_extract_dir)
+            
+            # Find the extracted scripts directory
+            github_scripts_dir = None
+            for item in temp_extract_dir.iterdir():
+                if item.is_dir() and (item / "scripts").exists():
+                    github_scripts_dir = item / "scripts"
+                    break
+            
+            if not github_scripts_dir:
+                raise Exception("Scripts directory not found in GitHub download")
+            
+            # Ensure local scripts directory exists
+            scripts_dest.mkdir(parents=True, exist_ok=True)
+            
+            # Get current local scripts
+            local_scripts = set()
+            if scripts_dest.exists():
+                local_scripts = {item.name for item in scripts_dest.iterdir() if item.is_dir()}
+            
+            # Get GitHub scripts
+            github_scripts = {item.name for item in github_scripts_dir.iterdir() if item.is_dir()}
+            
+            # Calculate changes
+            to_add = github_scripts - local_scripts
+            to_delete = local_scripts - github_scripts
+            to_check_update = github_scripts & local_scripts
+            
+            changes_made = 0
+            
+            # DELETE removed scripts
+            for script_name in to_delete:
+                script_path = scripts_dest / script_name
+                if script_path.exists():
+                    shutil.rmtree(script_path)
+                    self.logger.info(f"DELETED script: {script_name}")
+                    changes_made += 1
+            
+            # ADD new scripts
+            for script_name in to_add:
+                src_path = github_scripts_dir / script_name
+                dst_path = scripts_dest / script_name
+                shutil.copytree(src_path, dst_path)
+                self.logger.info(f"ADDED script: {script_name}")
+                changes_made += 1
+            
+            # UPDATE changed scripts
+            for script_name in to_check_update:
+                src_path = github_scripts_dir / script_name
+                dst_path = scripts_dest / script_name
+                
+                # Compare script content to see if update needed
+                if self.script_content_changed(src_path, dst_path):
+                    shutil.rmtree(dst_path)
+                    shutil.copytree(src_path, dst_path)
+                    self.logger.info(f"UPDATED script: {script_name}")
+                    changes_made += 1
+            
+            # Clean up
+            os.unlink(zip_path)
+            shutil.rmtree(temp_extract_dir)
+            
+            self.logger.info(f"Script sync complete: {changes_made} changes made")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to sync scripts incrementally: {e}")
+            # Fallback to full download
+            self.download_scripts_from_github(scripts_dest)
+
+    def script_content_changed(self, src_dir: Path, dst_dir: Path) -> bool:
+        """Check if script directory content has changed"""
+        try:
+            import hashlib
+            
+            def get_dir_hash(directory: Path) -> str:
+                """Get hash of all files in directory"""
+                hash_md5 = hashlib.md5()
+                
+                if not directory.exists():
+                    return ""
+                
+                # Sort files for consistent hashing
+                files = sorted(directory.rglob('*'))
+                for file_path in files:
+                    if file_path.is_file():
+                        # Include relative path and content
+                        rel_path = file_path.relative_to(directory)
+                        hash_md5.update(str(rel_path).encode())
+                        
+                        try:
+                            with open(file_path, 'rb') as f:
+                                hash_md5.update(f.read())
+                        except Exception:
+                            # Skip files we can't read
+                            continue
+                
+                return hash_md5.hexdigest()
+            
+            src_hash = get_dir_hash(src_dir)
+            dst_hash = get_dir_hash(dst_dir)
+            
+            return src_hash != dst_hash
+            
+        except Exception as e:
+            self.logger.warning(f"Could not compare script content for {src_dir.name}: {e}")
+            return True  # Assume changed if we can't compare
 
     def download_scripts_from_github(self, scripts_dest: Path):
         """Download scripts from GitHub repository"""
