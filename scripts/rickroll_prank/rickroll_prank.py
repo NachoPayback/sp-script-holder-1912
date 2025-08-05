@@ -17,8 +17,13 @@ def main():
     duration = random.randint(3, 9)
     print(f"Playing Rick Roll video for {duration} seconds...")
     
-    # Path to the local MP4 file
-    video_file = Path("E:/CodeTests/P_Buttons/RickRoll_Small.mp4")
+    # Path to the local MP4 file - look in script directory first, then project root
+    script_dir = Path(__file__).parent
+    video_file = script_dir / "RickRoll_Small.mp4"
+    
+    # Fallback to project root if not in script directory
+    if not video_file.exists():
+        video_file = Path("E:/CodeTests/P_Buttons/RickRoll_Small.mp4")
     
     if not video_file.exists():
         print(f"Video file not found: {video_file}")
