@@ -48,7 +48,7 @@ class FakeClippy:
     def get_clippy_base64(self):
         """Get the embedded Clippy image as base64"""
         try:
-            clippy_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'Clippy.png')
+            clippy_path = os.path.join(os.path.dirname(__file__), 'Clippy.png')
             with open(clippy_path, 'rb') as f:
                 return base64.b64encode(f.read()).decode()
         except Exception as e:

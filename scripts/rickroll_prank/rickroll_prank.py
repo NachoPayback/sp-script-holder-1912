@@ -1,129 +1,96 @@
 #!/usr/bin/env python3
 """
-Rick Roll Prank - Opens "Never Gonna Give You Up" for 3-5 seconds then closes it
+Rick Roll Prank - Plays local MP4 video file
 """
 
-import subprocess
 import time
 import random
-import sys
-
-try:
-    import psutil
-except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "psutil"])
-    import psutil
-
-
-def get_chrome_executable():
-    """Find Chrome executable path"""
-    possible_paths = [
-        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
-        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
-        r"C:\Users\{username}\AppData\Local\Google\Chrome\Application\chrome.exe".format(
-            username=os.environ.get('USERNAME', '')
-        )
-    ]
-    
-    for path in possible_paths:
-        if os.path.exists(path):
-            return path
-    
-    # Try to find via registry
-    try:
-        import winreg
-        key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, 
-                           r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe")
-        chrome_path, _ = winreg.QueryValueEx(key, "")
-        winreg.CloseKey(key)
-        if os.path.exists(chrome_path):
-            return chrome_path
-    except:
-        pass
-    
-    return "chrome"  # Hope it's in PATH
-
-
-def open_rickroll():
-    """Open Rick Roll video in Chrome"""
-    url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-    chrome_path = get_chrome_executable()
-    
-    try:
-        # Open Chrome with the Rick Roll URL
-        process = subprocess.Popen([
-            chrome_path,
-            "--new-window",
-            "--start-maximized",
-            url
-        ])
-        
-        return process
-        
-    except Exception as e:
-        
-        # Fallback: Use default browser
-        try:
-            import webbrowser
-            webbrowser.open(url)
-            return None  # Can't track process for default browser
-        except Exception as e2:
-            return None
-
-
-def close_chrome_tabs_with_rickroll():
-    """Close Chrome tabs containing the Rick Roll video"""
-    closed_count = 0
-    
-    try:
-        for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-            try:
-                if proc.info['name'] and 'chrome.exe' in proc.info['name'].lower():
-                    cmdline = proc.info['cmdline']
-                    if cmdline and any('dQw4w9WgXcQ' in str(arg) for arg in cmdline):
-                        proc.terminate()
-                        closed_count += 1
-            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-                continue
-                
-    except Exception as e:
-    
-    # Alternative method: Close newest Chrome window
-    if closed_count == 0:
-        try:
-            subprocess.run([
-                "taskkill", "/F", "/IM", "chrome.exe", "/T"
-            ], capture_output=True)
-        except Exception as e:
-    
-    return closed_count
-
+import subprocess
+from pathlib import Path
 
 def main():
     """Main Rick Roll prank function"""
-    # Random duration between 3-5 seconds
-    duration = random.randint(3, 5)
+    print("Rick Roll Prank - Local Video")
+    print("=" * 40)
     
-    # Open the Rick Roll
-    chrome_process = open_rickroll()
+    # Random duration between 3-9 seconds
+    duration = random.randint(3, 9)
+    print(f"Playing Rick Roll video for {duration} seconds...")
     
-    # Wait for the specified duration
-    time.sleep(duration)
+    # Path to the local MP4 file
+    video_file = Path("E:/CodeTests/P_Buttons/RickRoll_Small.mp4")
     
-    # Close the Rick Roll
-    if chrome_process:
-        try:
-            chrome_process.terminate()
-            # Wait a moment then force close if needed
-            time.sleep(0.5)
-            if chrome_process.poll() is None:
-                chrome_process.kill()
-        except:
-            close_chrome_tabs_with_rickroll()
-    else:
-        close_chrome_tabs_with_rickroll()
+    if not video_file.exists():
+        print(f"Video file not found: {video_file}")
+        return False
+    
+    try:
+        # Generate random window size and position in Python
+        
+        # Random window size (width: 400-1080, maintaining 4:3 ratio)
+        window_width = random.randint(400, min(1080, 1400))
+        window_height = int(window_width * 0.75)
+        
+        # Random position (keep window on screen)
+        max_x = max(0, 1920 - window_width - 50)
+        max_y = max(0, 1080 - window_height - 50)
+        pos_x = random.randint(0, max_x) if max_x > 0 else 0
+        pos_y = random.randint(0, max_y) if max_y > 0 else 0
+        
+        # Use Windows Media Player with proper timing control
+        ps_script = f'''
+Add-Type -AssemblyName PresentationCore
+Add-Type -AssemblyName PresentationFramework
 
+$mediaElement = New-Object System.Windows.Controls.MediaElement
+$mediaElement.Source = [System.Uri]::new("{video_file.as_uri()}")
+$mediaElement.LoadedBehavior = [System.Windows.Controls.MediaState]::Play
+$mediaElement.Volume = 1.0
+$mediaElement.Stretch = [System.Windows.Media.Stretch]::Fill
+
+$window = New-Object System.Windows.Window
+$window.Content = $mediaElement
+$window.Width = {window_width}
+$window.Height = {window_height}
+$window.Left = {pos_x}
+$window.Top = {pos_y}
+$window.WindowStyle = [System.Windows.WindowStyle]::None
+$window.Topmost = $true
+$window.Background = [System.Windows.Media.Brushes]::Black
+
+# Timer to close window after specified duration
+$timer = New-Object System.Windows.Threading.DispatcherTimer
+$timer.Interval = [System.TimeSpan]::FromSeconds({duration})
+$timer.Add_Tick({{
+    $window.Close()
+    $timer.Stop()
+}})
+
+$window.Add_Loaded({{
+    $mediaElement.Play()
+    $timer.Start()
+}})
+
+$window.ShowDialog() | Out-Null
+'''
+        
+        print(f"Starting video playback in {window_width}x{window_height} window at ({pos_x},{pos_y})...")
+        result = subprocess.run([
+            "powershell", "-ExecutionPolicy", "Bypass", "-Command", ps_script
+        ], capture_output=True, text=True, timeout=duration + 10)
+        
+        if result.returncode == 0:
+            print("Rick Roll completed successfully!")
+            return True
+        else:
+            print(f"Playback error: {result.stderr}")
+            return False
+        
+    except Exception as e:
+        print(f"Error playing video: {e}")
+        return False
 
 if __name__ == "__main__":
-    import os
-    main()
+    success = main()
+    print("=" * 40)
+    print("Prank completed!" if success else "Prank failed!")

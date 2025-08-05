@@ -1,0 +1,12 @@
+[project]
+name = "explosion_overlay"
+version = "1.0.0"
+description = "Explosion overlay with transparency"
+dependencies = [
+    "pillow>=10.0.0",
+    "pywin32>=306"
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"

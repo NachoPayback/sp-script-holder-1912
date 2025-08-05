@@ -103,7 +103,7 @@ $form.ShowDialog() | Out-Null
         # Execute PowerShell script to show native notification
         result = subprocess.run([
             "powershell", "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass", "-Command", ps_script
-        ], capture_output=True, text=True, timeout=15)
+        ], capture_output=True, text=True, timeout=25)
 
         if result.returncode == 0:
             print(f"Successfully displayed balloon notification: {notif['title']} - {notif['message']}")

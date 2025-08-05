@@ -30,8 +30,9 @@ def play_explosion_overlay():
     
     print(f"Using {len(frame_files)} frames")
     
-    # Create window
+    # Create window (initially hidden)
     root = tk.Tk()
+    root.withdraw()  # Hide window initially
     root.overrideredirect(True)
     root.attributes('-topmost', True)
     
@@ -48,9 +49,11 @@ def play_explosion_overlay():
                       bg='black', highlightthickness=0)
     canvas.pack()
     
-    # Get window handle after it's created
+    # Show window to get handle, then hide again
+    root.deiconify()
     root.update()
     hwnd = int(root.wm_frame(), 16)
+    root.withdraw()  # Hide again while setting up transparency
     
     # Make window layered and click-through
     try:
@@ -132,6 +135,10 @@ def play_explosion_overlay():
                 ], capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
         except Exception as e:
             print(f"Audio failed: {e}")
+    
+    # Show window now that transparency is set up
+    root.deiconify()
+    root.update()
     
     # Start audio immediately
     audio_thread = threading.Thread(target=play_audio, daemon=True)

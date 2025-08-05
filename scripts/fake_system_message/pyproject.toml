@@ -1,0 +1,11 @@
+[project]
+name = "fake_system_message"
+version = "1.0.0"
+description = "Displays fake Windows system notifications"
+dependencies = [
+    "pywin32>=306"
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
