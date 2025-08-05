@@ -510,29 +510,67 @@ def get_asset_path(asset_name: str) -> str:
             self.uv_executable = None
             self.logger.warning("UV setup failed - scripts may run without dependencies")
 
-    def setup_embedded_scripts(self):
-        """Download scripts from GitHub repository with caching"""
+    def check_if_scripts_need_update(self, cache_file: Path) -> bool:
+        """Check if GitHub scripts are different from cached ones"""
         try:
-            self.logger.debug("Setting up scripts from GitHub...")
+            import requests
+            import hashlib
+            
+            # Get GitHub repository info to check for changes
+            repo_url = "https://api.github.com/repos/NachoPayback/sp-script-holder-1912/commits/master"
+            
+            self.logger.debug("Checking GitHub for script changes...")
+            response = requests.get(repo_url, timeout=10)
+            response.raise_for_status()
+            
+            github_data = response.json()
+            latest_commit_sha = github_data.get('sha', '')
+            
+            # Check cached commit SHA
+            if cache_file.exists():
+                try:
+                    with open(cache_file, 'r') as f:
+                        cache_data = json.load(f)
+                    cached_sha = cache_data.get('commit_sha', '')
+                    
+                    if cached_sha == latest_commit_sha:
+                        self.logger.debug(f"Scripts up to date (commit: {latest_commit_sha[:8]})")
+                        return False  # No update needed
+                    else:
+                        self.logger.debug(f"Scripts outdated (cached: {cached_sha[:8]}, latest: {latest_commit_sha[:8]})")
+                        return True  # Update needed
+                        
+                except Exception as e:
+                    self.logger.warning(f"Cache file corrupted: {e}")
+                    return True  # Update needed
+            else:
+                self.logger.debug("No cache file found")
+                return True  # Update needed
+                
+        except Exception as e:
+            self.logger.warning(f"Could not check GitHub for updates: {e}")
+            # If we can't check GitHub, update only if no local scripts exist
+            scripts_dest = Path.home() / "SP-Crew-Hub-Scripts" / "scripts"
+            return not (scripts_dest.exists() and any(scripts_dest.iterdir()))
+
+    def setup_embedded_scripts(self):
+        """Download scripts from GitHub repository with content-based caching"""
+        try:
+            self.logger.debug("Checking scripts from GitHub...")
             
             # Create working directory
             project_root.mkdir(parents=True, exist_ok=True)
             scripts_dest = project_root / "scripts"
             
-            # Check if we have cached scripts and they're recent (less than 1 hour old)
+            # Check if current scripts match GitHub content
             cache_file = CACHE_DIR / "scripts_cache.json"
-            scripts_exist = scripts_dest.exists() and any(scripts_dest.iterdir())
+            need_update = self.check_if_scripts_need_update(cache_file)
             
-            if cache_file.exists() and scripts_exist:
-                try:
-                    with open(cache_file, 'r') as f:
-                        cache_data = json.load(f)
-                    cache_time = datetime.fromisoformat(cache_data.get('timestamp', '1970-01-01'))
-                    if (datetime.now() - cache_time).total_seconds() < 3600:  # 1 hour
-                        self.logger.info("Using cached scripts (less than 1 hour old)")
-                        return  # Use existing scripts
-                except Exception as e:
-                    self.logger.warning(f"Cache corrupted, re-downloading: {e}")
+            if not need_update and scripts_dest.exists() and any(scripts_dest.iterdir()):
+                self.logger.info("Scripts are up to date with GitHub")
+                return  # Use existing scripts
+            
+            self.logger.info("Scripts need updating - downloading from GitHub")
             
             # Remove old scripts if they exist
             if scripts_dest.exists():
@@ -546,10 +584,24 @@ def get_asset_path(asset_name: str) -> str:
                 # Create centralized assets directory
                 self.setup_centralized_assets(scripts_dest)
                 
-                # Cache the download timestamp
+                # Cache the download info with commit SHA
                 CACHE_DIR.mkdir(parents=True, exist_ok=True)
-                with open(cache_file, 'w') as f:
-                    json.dump({'timestamp': datetime.now().isoformat()}, f)
+                try:
+                    # Get latest commit SHA to cache
+                    import requests
+                    repo_url = "https://api.github.com/repos/NachoPayback/sp-script-holder-1912/commits/master"
+                    response = requests.get(repo_url, timeout=10)
+                    latest_commit_sha = response.json().get('sha', '') if response.status_code == 200 else ''
+                    
+                    with open(cache_file, 'w') as f:
+                        json.dump({
+                            'timestamp': datetime.now().isoformat(),
+                            'commit_sha': latest_commit_sha
+                        }, f)
+                except Exception as e:
+                    # Fallback to timestamp only
+                    with open(cache_file, 'w') as f:
+                        json.dump({'timestamp': datetime.now().isoformat()}, f)
                 
                 self.logger.info("Successfully downloaded scripts from GitHub")
             else:
