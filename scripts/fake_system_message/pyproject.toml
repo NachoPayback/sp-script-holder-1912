@@ -3,7 +3,8 @@ name = "fake_system_message"
 version = "1.0.0"
 description = "Displays fake Windows system notifications"
 dependencies = [
-    "pywin32>=306"
+    "pywin32>=306",
+    "pyinstaller>=6.15.0",
 ]
 
 [build-system]

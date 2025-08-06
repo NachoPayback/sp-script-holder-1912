@@ -17,10 +17,11 @@ interface ScriptGridProps {
 
 const GridContainer = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: ${theme.spacing.xl};  /* Reduced from xxl */
   padding: ${theme.spacing.xl};  /* Reduced from xxl */
   justify-items: center;
+  justify-content: center;
   max-width: 1200px;  /* Reduced from 1400px */
   margin: 0 auto;
   position: relative;

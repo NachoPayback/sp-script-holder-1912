@@ -14,13 +14,12 @@ def main():
     # Random duration between 3-9 seconds
     duration = random.randint(3, 9)
     
-    # Path to the local MP4 file - look in script directory first, then project root
-    script_dir = Path(__file__).parent
-    video_file = script_dir / "RickRoll_Small.mp4"
+    # Get video from assets
+    import os, sys
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from assets_helper import get_video
     
-    # Fallback to project root if not in script directory
-    if not video_file.exists():
-        video_file = Path("E:/CodeTests/P_Buttons/RickRoll_Small.mp4")
+    video_file = get_video("RickRoll_Small.mp4")
     
     if not video_file.exists():
         return False

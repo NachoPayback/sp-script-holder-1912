@@ -530,14 +530,20 @@ function App() {
       const scriptNames = scriptsResponse.success ? scriptsResponse.scripts.map(s => 
         typeof s === 'string' ? s : s.script_name
       ) : [];
-      const friendlyResponse = await hubApi.getFriendlyNames(scriptNames);
+      // Include mute_call in the scripts to load so its customization is retrieved
+      const scriptNamesWithMute = [...scriptNames, 'mute_call'];
+      const friendlyResponse = await hubApi.getFriendlyNames(scriptNamesWithMute);
       if (friendlyResponse.success) {
-        // Add fake script friendly name
-        const friendlyNamesWithFake = {
+        // Use loaded friendly names, including any customization for mute_call
+        const friendlyNamesWithDefaults = {
           ...friendlyResponse.friendly_names,
-          'mute_call': { friendly_name: 'Mute the Call', custom_color: '#ef4444' }
+          // Only set default if mute_call wasn't already customized
+          'mute_call': friendlyResponse.friendly_names['mute_call'] || { 
+            friendly_name: 'Mute the Call', 
+            custom_color: '#ef4444' 
+          }
         };
-        setFriendlyNames(friendlyNamesWithFake);
+        setFriendlyNames(friendlyNamesWithDefaults);
       } else {
         // Fallback if no friendly names loaded
         setFriendlyNames({
@@ -572,9 +578,15 @@ function App() {
     const scriptNames = scripts.map(s => 
       typeof s === 'string' ? s : s.script_name
     );
-    const response = await hubApi.getFriendlyNames(scriptNames);
+    // Include mute_call so its customization is loaded
+    const scriptNamesWithMute = [...scriptNames, 'mute_call'];
+    const response = await hubApi.getFriendlyNames(scriptNamesWithMute);
     if (response.success) {
-      setFriendlyNames(response.friendly_names);
+      // Preserve existing friendly names and only update what was loaded
+      setFriendlyNames(prev => ({
+        ...prev,
+        ...response.friendly_names
+      }));
     }
   };
 

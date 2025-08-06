@@ -3,8 +3,10 @@ name = "explosion_overlay"
 version = "1.0.0"
 description = "Explosion overlay with transparency"
 dependencies = [
-    "pillow>=10.0.0",
-    "pywin32>=306"
+    "opencv-python>=4.5.0",
+    "numpy>=1.21.0", 
+    "pygame>=2.0.0",
+    "pyinstaller>=6.15.0",
 ]
 
 [build-system]
