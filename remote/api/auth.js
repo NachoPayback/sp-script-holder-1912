@@ -62,7 +62,7 @@ export default async function handler(req, res) {
     const { username, password, token } = req.body;
 
     // Handle token verification
-    if (token) {
+    if (token && !username && !password) {
       try {
         const decoded = JSON.parse(Buffer.from(token, 'base64').toString());
         
@@ -96,6 +96,7 @@ export default async function handler(req, res) {
       }
     }
 
+    // Handle login
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password required' });
     }
