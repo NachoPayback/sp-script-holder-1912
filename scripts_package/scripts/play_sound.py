@@ -78,5 +78,9 @@ def play_random_sound():
         ], capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
         return True
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for the script"""
     play_random_sound()
+
+if __name__ == "__main__":
+    main()

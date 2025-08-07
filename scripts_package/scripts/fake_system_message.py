@@ -87,5 +87,9 @@ try {{
     except Exception:
         return False
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for the script"""
     show_system_notification()
+
+if __name__ == "__main__":
+    main()

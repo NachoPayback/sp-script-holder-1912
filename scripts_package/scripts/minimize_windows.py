@@ -46,7 +46,11 @@ def minimize_restore_windows():
 
         return False
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for the script"""
     import sys
     success = minimize_restore_windows()
     sys.exit(0 if success else 1)
+
+if __name__ == "__main__":
+    main()

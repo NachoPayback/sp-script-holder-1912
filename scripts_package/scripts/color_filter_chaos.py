@@ -131,5 +131,9 @@ def color_filter_chaos():
     else:
         print("Failed to apply color filter - Magnification API may not be available")
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for the script"""
     color_filter_chaos()
+
+if __name__ == "__main__":
+    main()

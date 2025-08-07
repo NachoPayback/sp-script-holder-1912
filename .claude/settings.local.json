@@ -167,7 +167,18 @@
       "Bash(dist\\scripts.exe:*)",
       "Bash(scripts.exe:*)",
       "Bash(E:\\CodeTests\\P_Buttons\\dist\\scripts.exe --list)",
-      "Bash(.\\scripts.exe --list)"
+      "Bash(.\\scripts.exe --list)",
+      "Bash(for file in minimize_windows.py move_mouse.py play_sound.py)",
+      "Bash(do echo \"Fixing $file\")",
+      "Bash(if ! grep -q \"def main\" \"$file\")",
+      "Bash(then sed -i 's/if __name__ == \"\"__main__\"\":/def main():\\n    \"\"\"\"\"\"Main entry point for the script\"\"\"\"\"\"\\n    /; s/\\(__main__\"\":\\)/\\1\\n    main()\\n\\ndef main():\\n    pass\\n\\nif __name__ == \"\"__main__\"\":\\n    main()/' \"$file\")",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(for file in *.py)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(if grep -q \"def main\" \"$file\")",
+      "Bash(then echo \"✓ Has main()\")",
+      "Bash(else echo \"✗ Missing main() - needs fix\")"
     ],
     "deny": []
   }

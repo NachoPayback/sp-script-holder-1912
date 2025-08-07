@@ -9,6 +9,7 @@ import { FakeCallModal } from './components/ui/FakeCallModal';
 import { ToastProvider } from './components/ui/ToastContainer';
 import { useAuth } from './hooks/useAuth';
 import { useRealtime } from './hooks/useRealtime';
+import { useHubPresence } from './hooks/useHubPresence';
 import { theme } from './styles/theme';
 import { hubApi, assignmentApi, scriptApi } from './services/api';
 import { isUserAdmin } from './utils/admin';
@@ -382,13 +383,17 @@ function App() {
   const [fakeCallModalOpen, setFakeCallModalOpen] = useState(false);
   
   const { scriptCommands } = useRealtime(selectedHub?.id || '');
+  const { hubs: presenceHubs, isConnected: presenceConnected } = useHubPresence(!!user);
 
-  // Load hubs when user is authenticated
+  // Update hubs state when presence changes
   useEffect(() => {
-    if (user) {
+    if (presenceConnected && presenceHubs.length > 0) {
+      setHubs(presenceHubs);
+    } else if (user) {
+      // Fallback to API polling if presence fails
       loadHubs();
     }
-  }, [user]);
+  }, [presenceHubs, presenceConnected, user]);
 
   // Auto-refresh functionality like vanilla version
   useEffect(() => {

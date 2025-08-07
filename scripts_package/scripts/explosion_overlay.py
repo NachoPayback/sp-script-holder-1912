@@ -28,15 +28,11 @@ gdi32 = ctypes.windll.gdi32
 def play_explosion_overlay():
     """Display transparent explosion overlay"""
     
-    # Handle PyInstaller bundled files
-    if hasattr(sys, '_MEIPASS'):
-        # Running as executable - PyInstaller temp directory
-        script_dir = Path(sys._MEIPASS)
-    else:
-        # Running as script
-        script_dir = Path(__file__).parent
+    # Use centralized assets
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from assets_helper import get_video
     
-    video_file = script_dir / "Explosion.mp4"
+    video_file = get_video("Explosion.mp4")
     
     if not video_file.exists():
         return False
@@ -152,5 +148,9 @@ def play_explosion_overlay():
     
     return True
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for the script"""
     play_explosion_overlay()
+
+if __name__ == "__main__":
+    main()

@@ -47,5 +47,9 @@ def move_mouse_randomly():
         print(f"Error during mouse movement: {e}")
         return False
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for the script"""
     move_mouse_randomly()
+
+if __name__ == "__main__":
+    main()

@@ -12,7 +12,7 @@ from pathlib import Path
 
 def build_scripts_exe():
     """Build the unified scripts executable"""
-    project_root = Path(__file__).parent
+    project_root = Path(__file__).parent.parent  # Go up one level since we're in build_tools/
     package_dir = project_root / "scripts_package"
     
     if not package_dir.exists():
