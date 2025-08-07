@@ -7,7 +7,6 @@ A fast, parallel script execution system with remote control capabilities.
 - **Hub** (`hub/`) - Downloads and executes bundled scripts via remote commands
 - **Scripts Package** (`scripts_package/`) - All scripts bundled in one fast-loading executable  
 - **Remote** (`remote/`) - Web interface for controlling hubs
-- **Scripts** (`scripts/`) - Original individual scripts (reference)
 
 ## 🚀 Quick Start
 
@@ -65,7 +64,8 @@ The bundled approach provides massive performance gains:
 
 ## 📚 Documentation
 
-- [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Detailed directory structure
+- [Script Creation Guide](docs/SCRIPT_CREATION_GUIDE.md) - How to create new scripts
+- [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Detailed directory structure  
 - [Database Setup](docs/database-setup.sql) - Supabase schema
 - [Architecture](docs/remote_hub_architecture.md) - System design
 
