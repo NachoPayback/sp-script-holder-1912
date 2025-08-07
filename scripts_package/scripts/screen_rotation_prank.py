@@ -108,37 +108,29 @@ def main():
         original_height = dm.dmPelsHeight
         print(f"Original orientation: {original_orientation}")
 
-        # Random rotation sequence (2-4 rotations)
+        # Single random rotation
         import random
         rotations = [DMDO_90, DMDO_180, DMDO_270]
-        num_rotations = random.randint(2, 4)
-        rotation_sequence = random.choices(rotations, k=num_rotations)
+        random_rotation = random.choice(rotations)
         
-        print(f"Starting {num_rotations} random rotations...")
+        print(f"Rotating screen {random_rotation * 90} degrees...")
         
-        for i, rotation in enumerate(rotation_sequence, 1):
-            print(f"Rotation {i}/{num_rotations}: {rotation * 90} degrees...")
-            
-            # Set rotation and adjust dimensions
-            dm.dmDisplayOrientation = rotation
-            if rotation in [DMDO_90, DMDO_270]:  # Portrait orientations
-                dm.dmPelsWidth = original_height
-                dm.dmPelsHeight = original_width
-            else:  # Landscape orientations (0, 180)
-                dm.dmPelsWidth = original_width
-                dm.dmPelsHeight = original_height
-            
-            result = user32.ChangeDisplaySettingsW(ctypes.byref(dm), CDS_UPDATEREGISTRY)
-            if result != DISP_CHANGE_SUCCESSFUL:
-                print(f"Failed rotation {i}: {result}")
-                break
-                
-            # Random pause between rotations (1-3 seconds)
-            pause = random.uniform(1.0, 3.0)
-            time.sleep(pause)
+        # Set rotation and adjust dimensions
+        dm.dmDisplayOrientation = random_rotation
+        if random_rotation in [DMDO_90, DMDO_270]:  # Portrait orientations
+            dm.dmPelsWidth = original_height
+            dm.dmPelsHeight = original_width
+        else:  # Landscape orientations (180)
+            dm.dmPelsWidth = original_width
+            dm.dmPelsHeight = original_height
+        
+        result = user32.ChangeDisplaySettingsW(ctypes.byref(dm), CDS_UPDATEREGISTRY)
+        if result != DISP_CHANGE_SUCCESSFUL:
+            print(f"Failed to rotate screen: {result}")
+            return
 
-        print("Rotation sequence complete! Restoring original in 2 seconds...")
-        time.sleep(2)
+        print("Screen rotated! Restoring in 5 seconds...")
+        time.sleep(5)
 
         # Restore original settings
         dm.dmDisplayOrientation = original_orientation
