@@ -9,13 +9,14 @@ import time
 def reset_screen_to_default():
     """Emergency reset - force screen back to normal orientation"""
     try:
-        import ctypes
-        user32 = ctypes.windll.user32
-        
-        # Reset to default display settings (restores orientation to 0)
-        result = user32.ChangeDisplaySettingsW(None, 0)
-        print("Screen reset to default orientation")
-        return True
+        import rotatescreen
+        screen = rotatescreen.get_primary_display()
+        if screen is not None:
+            screen.rotate_to(0)  # 0 = normal orientation
+            print("Screen reset to default orientation (0 degrees)")
+            return True
+        else:
+            print("Could not get primary display")
     except Exception as e:
         print(f"Could not reset screen: {e}")
     return False
@@ -37,118 +38,66 @@ def main():
     print("Screen Rotation Prank starting...")
 
     try:
-        # Use Windows API directly instead of rotatescreen package
-        import ctypes
-        from ctypes import wintypes
-        
-        # Windows constants for display settings
-        CDS_UPDATEREGISTRY = 0x00000001
-        CDS_RESET = 0x40000000
-        DISP_CHANGE_SUCCESSFUL = 0
-        
-        # Display orientation constants  
-        DMDO_DEFAULT = 0
-        DMDO_90 = 1
-        DMDO_180 = 2
-        DMDO_270 = 3
-        
-        # Get current display settings
-        user32 = ctypes.windll.user32
-        
-        class DEVMODE(ctypes.Structure):
-            _fields_ = [
-                ('dmDeviceName', ctypes.c_char * 32),
-                ('dmSpecVersion', wintypes.WORD),
-                ('dmDriverVersion', wintypes.WORD),
-                ('dmSize', wintypes.WORD),
-                ('dmDriverExtra', wintypes.WORD),
-                ('dmFields', wintypes.DWORD),
-                ('dmOrientation', ctypes.c_short),
-                ('dmPaperSize', ctypes.c_short),
-                ('dmPaperLength', ctypes.c_short),
-                ('dmPaperWidth', ctypes.c_short),
-                ('dmScale', ctypes.c_short),
-                ('dmCopies', ctypes.c_short),
-                ('dmDefaultSource', ctypes.c_short),
-                ('dmPrintQuality', ctypes.c_short),
-                ('dmColor', ctypes.c_short),
-                ('dmDuplex', ctypes.c_short),
-                ('dmYResolution', ctypes.c_short),
-                ('dmTTOption', ctypes.c_short),
-                ('dmCollate', ctypes.c_short),
-                ('dmFormName', ctypes.c_char * 32),
-                ('dmLogPixels', wintypes.WORD),
-                ('dmBitsPerPel', wintypes.DWORD),
-                ('dmPelsWidth', wintypes.DWORD),
-                ('dmPelsHeight', wintypes.DWORD),
-                ('dmDisplayFlags', wintypes.DWORD),
-                ('dmDisplayFrequency', wintypes.DWORD),
-                ('dmICMMethod', wintypes.DWORD),
-                ('dmICMIntent', wintypes.DWORD),
-                ('dmMediaType', wintypes.DWORD),
-                ('dmDitherType', wintypes.DWORD),
-                ('dmReserved1', wintypes.DWORD),
-                ('dmReserved2', wintypes.DWORD),
-                ('dmPanningWidth', wintypes.DWORD),
-                ('dmPanningHeight', wintypes.DWORD),
-                ('dmDisplayOrientation', wintypes.DWORD),
-                ('dmDisplayFixedOutput', wintypes.DWORD),
-            ]
+        # Import the rotate-screen package
+        import rotatescreen
+        import random
 
-        # Get current display settings
-        dm = DEVMODE()
-        dm.dmSize = ctypes.sizeof(DEVMODE)
-        
-        if not user32.EnumDisplaySettingsW(None, -1, ctypes.byref(dm)):
-            print("Could not get current display settings")
+        # Get the primary display
+        screen = rotatescreen.get_primary_display()
+        if screen is None:
+            print("Could not get primary display")
             return
             
-        original_orientation = dm.dmDisplayOrientation
-        original_width = dm.dmPelsWidth
-        original_height = dm.dmPelsHeight
+        print(f"Found display: {screen}")
+
+        # Get current orientation
+        original_orientation = screen.current_orientation
         print(f"Original orientation: {original_orientation}")
 
-        # Single random rotation
-        import random
-        rotations = [DMDO_90, DMDO_180, DMDO_270]
-        random_rotation = random.choice(rotations)
+        # Pick random rotation angle manually
+        import os
+        random_bytes = os.urandom(1)[0]  # Get truly random byte
+        random_choice = random_bytes % 3  # 0, 1, or 2
         
-        print(f"Rotating screen {random_rotation * 90} degrees...")
+        if random_choice == 0:
+            random_angle = 90
+        elif random_choice == 1:
+            random_angle = 180
+        else:
+            random_angle = 270
         
-        # Set rotation and adjust dimensions
-        dm.dmDisplayOrientation = random_rotation
-        if random_rotation in [DMDO_90, DMDO_270]:  # Portrait orientations
-            dm.dmPelsWidth = original_height
-            dm.dmPelsHeight = original_width
-        else:  # Landscape orientations (180)
-            dm.dmPelsWidth = original_width
-            dm.dmPelsHeight = original_height
+        print(f"DEBUG: Random choice: {random_choice}")
+        print(f"DEBUG: Selected angle: {random_angle}")
+        print(f"Rotating screen {random_angle} degrees...")
+        screen.rotate_to(random_angle)
         
-        result = user32.ChangeDisplaySettingsW(ctypes.byref(dm), CDS_UPDATEREGISTRY)
-        if result != DISP_CHANGE_SUCCESSFUL:
-            print(f"Failed to rotate screen: {result}")
-            return
+        # Check what orientation we actually got
+        actual_orientation = screen.current_orientation
+        print(f"DEBUG: After rotation, actual orientation is: {actual_orientation}")
 
         print("Screen rotated! Restoring in 5 seconds...")
         time.sleep(5)
 
-        # Restore original settings
-        dm.dmDisplayOrientation = original_orientation
-        dm.dmPelsWidth = original_width
-        dm.dmPelsHeight = original_height
-        
+        # Restore original orientation
         print("Restoring original orientation...")
-        user32.ChangeDisplaySettingsW(ctypes.byref(dm), CDS_UPDATEREGISTRY)
+        screen.rotate_to(original_orientation)
         
+        # Verify restoration
+        final_orientation = screen.current_orientation
+        print(f"DEBUG: After restore, final orientation is: {final_orientation}")
+
         print("Screen rotation prank complete!")
 
+    except ImportError:
+        print("Error: rotate-screen package not installed")
+        print("Please install with: pip install rotate-screen")
+        return
     except Exception as e:
         print(f"Error during screen rotation: {e}")
         try:
-            # Try to reset display settings
-            user32 = ctypes.windll.user32
-            user32.ChangeDisplaySettingsW(None, 0)
-            print("Attempted to restore display settings")
+            # Try to restore to normal orientation if something went wrong
+            if reset_screen_to_default():
+                print("Attempted to restore to normal orientation")
         except Exception:
             print("Could not restore orientation automatically")
             print("You may need to manually fix screen orientation in Display Settings")
