@@ -7,6 +7,7 @@ import { ScriptCustomizationModal } from './components/ui/ScriptCustomizationMod
 import { HubSettingsModal } from './components/ui/HubSettingsModal';
 import { FakeCallModal } from './components/ui/FakeCallModal';
 import { ToastProvider } from './components/ui/ToastContainer';
+import { Button } from './components/ui/Button';
 import { useAuth } from './hooks/useAuth';
 import { useRealtime } from './hooks/useRealtime';
 import { useHubPresence } from './hooks/useHubPresence';
@@ -15,6 +16,7 @@ import { hubApi, assignmentApi, scriptApi } from './services/api';
 import { isUserAdmin } from './utils/admin';
 import { getUserColor } from './utils/userColors';
 import type { Hub, HubScript, Assignment } from './types/Hub';
+import { IoRefresh, IoLogOut, IoSettings, IoPerson, IoShield } from 'react-icons/io5';
 
 const AppContainer = styled.div`
   position: fixed;
@@ -67,15 +69,55 @@ const HeaderContent = styled.div`
 `;
 
 const Title = styled.h1`
-  font-size: 4rem;
-  font-weight: 900;
-  letter-spacing: -0.02em;
-  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #6366f1 100%);
+  font-family: ${theme.fonts.display};
+  font-size: 3.5rem;
+  font-weight: ${theme.fonts.weights.bold};
+  letter-spacing: -0.01em;
+  background: ${theme.gradients.electric};
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin: 0;
-  text-shadow: 0 0 40px rgba(59, 130, 246, 0.5);
+  text-shadow: 0 0 40px ${theme.colors.glow};
+  user-select: none;
+`;
+
+const UserSection = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+`;
+
+const UserInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: ${theme.colors.surface};
+  border-radius: ${theme.borderRadius.lg};
+  border: 1px solid ${theme.colors.borderLight};
+`;
+
+const Username = styled.span`
+  font-family: ${theme.fonts.family};
+  font-weight: ${theme.fonts.weights.medium};
+  color: ${theme.colors.text};
+  font-size: 0.925rem;
+`;
+
+const AdminBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: ${theme.colors.primary}20;
+  border: 1px solid ${theme.colors.primary}40;
+  border-radius: ${theme.borderRadius.sm};
+  color: ${theme.colors.primary};
+  font-size: 0.75rem;
+  font-weight: ${theme.fonts.weights.semibold};
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 `;
 
 
@@ -118,27 +160,6 @@ const HubListHeader = styled.div`
   margin-bottom: 60px;
 `;
 
-const RefreshButton = styled.button`
-  background: rgba(30, 41, 59, 0.5);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  color: #e2e8f0;
-  padding: 12px 24px;
-  border-radius: 12px;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 600;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  
-  &:hover {
-    background: rgba(59, 130, 246, 0.2);
-    border-color: rgba(59, 130, 246, 0.5);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
-  }
-`;
 
 const HubGrid = styled.div`
   display: grid;
@@ -267,30 +288,6 @@ const EditModeToggle = styled.button<{ $isActive: boolean }>`
   `}
 `;
 
-const SettingsButton = styled.button`
-  background: rgba(30, 41, 59, 0.5);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  color: #e2e8f0;
-  padding: 12px 20px;
-  border-radius: 12px;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 0.9rem;
-  font-weight: 700;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  
-  &:hover {
-    background: rgba(99, 102, 241, 0.2);
-    border-color: rgba(99, 102, 241, 0.5);
-    color: #a5b4fc;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
-  }
-`;
 
 const SectionTitle = styled.h2`
   font-size: 1.3rem;
@@ -634,25 +631,23 @@ function App() {
         <Header>
           <HeaderContent>
             <Title>SP CREW CONTROL</Title>
-{user && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                <span style={{ color: theme.colors.textSecondary }}>
-                  {user.username} {isUserAdmin(user) ? '(ADMIN)' : ''}
-                </span>
-                <button 
-                  onClick={logout}
-                  style={{
-                    background: theme.colors.error,
-                    color: 'white',
-                    border: 'none',
-                    padding: '8px 16px',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  LOGOUT
-                </button>
-              </div>
+            {user && (
+              <UserSection>
+                <UserInfo>
+                  <IoPerson size={16} />
+                  <Username>{user.username}</Username>
+                  {isUserAdmin(user) && (
+                    <AdminBadge>
+                      <IoShield size={12} />
+                      Admin
+                    </AdminBadge>
+                  )}
+                </UserInfo>
+                <Button variant="danger" size="sm" onClick={logout}>
+                  <IoLogOut />
+                  Logout
+                </Button>
+              </UserSection>
             )}
           </HeaderContent>
         </Header>
@@ -662,9 +657,10 @@ function App() {
             {view === 'hubs' ? (
               <HubListContainer>
                 <HubListHeader>
-                  <RefreshButton onClick={loadHubs}>
-                    🔄 REFRESH HUBS
-                  </RefreshButton>
+                  <Button variant="secondary" onClick={loadHubs}>
+                    <IoRefresh />
+                    Refresh Hubs
+                  </Button>
                 </HubListHeader>
                 <HubGrid>
                   {hubs.map(hub => (
@@ -695,9 +691,12 @@ function App() {
                         {isEditMode ? 'EXIT EDIT' : 'EDIT MODE'}
                       </EditModeToggle>
                     )}
-                    <SettingsButton onClick={() => {
+                    <Button variant="ghost" onClick={() => {
                       setHubSettingsModalOpen(true);
-                    }}>⚙ HUB SETTINGS</SettingsButton>
+                    }}>
+                      <IoSettings />
+                      Hub Settings
+                    </Button>
                   </div>
                 </BackHeader>
                 {isEditMode && isUserAdmin(user) && (

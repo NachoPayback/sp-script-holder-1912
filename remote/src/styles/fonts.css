@@ -1,0 +1,26 @@
+/* Custom Fonts */
+
+/* Gridnik Font Family - Headers/Display */
+@font-face {
+  font-family: 'Gridnik';
+  src: url('/fonts/gridnik-bold.woff2') format('woff2'),
+       url('/fonts/gridnik-bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Gridnik';
+  src: url('/fonts/gridnik-medium.woff2') format('woff2'),
+       url('/fonts/gridnik-medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Inter Font - Body/UI Text (fallback to system) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* JetBrains Mono - Code/Monospace */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');

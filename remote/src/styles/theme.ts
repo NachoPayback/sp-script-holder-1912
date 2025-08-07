@@ -56,9 +56,14 @@ export const theme = {
     padding: 20,
   },
   fonts: {
+    // Headers and display text
+    display: "'Gridnik', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    // Body and UI text
     family: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    mono: "'JetBrains Mono', 'Consolas', monospace",
+    // Code and monospace
+    mono: "'JetBrains Mono', 'SF Mono', 'Monaco', 'Consolas', monospace",
     weights: {
+      light: 300,
       normal: 400,
       medium: 500,
       semibold: 600,
