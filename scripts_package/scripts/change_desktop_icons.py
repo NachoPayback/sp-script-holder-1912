@@ -17,10 +17,19 @@ def main():
     """Main prank function"""
     print("Starting desktop icon prank...")
 
-    # Get icon path
-    icon_path = Path(__file__).parent / "W_Logo1.ico"
-    if not icon_path.exists():
-        print("W_Logo1.ico not found in scripts folder")
+    # Use centralized assets
+    import sys
+    import os
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from assets_helper import get_image
+    
+    try:
+        icon_path = get_image("W_Logo1.ico")
+        if not icon_path.exists():
+            print("W_Logo1.ico not found in assets")
+            return
+    except Exception as e:
+        print(f"Could not load icon asset: {e}")
         return
 
     # Get desktop shortcuts
