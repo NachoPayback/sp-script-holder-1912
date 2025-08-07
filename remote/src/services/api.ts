@@ -18,7 +18,7 @@ export const authApi = {
   },
 
   verify: async (token: string): Promise<{ valid: boolean; user?: { username: string; permissions?: { admin?: boolean; all_hubs?: boolean } } }> => {
-    const response = await fetch(`${API_BASE}/api/verify`, {
+    const response = await fetch(`${API_BASE}/api/auth`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token })
@@ -27,7 +27,7 @@ export const authApi = {
   },
 
   getUserPermissions: async (username: string): Promise<{ success: boolean; permissions?: { admin?: boolean; all_hubs?: boolean } }> => {
-    const response = await fetch(`${API_BASE}/api/user-permissions?username=${encodeURIComponent(username)}`);
+    const response = await fetch(`${API_BASE}/api/auth?username=${encodeURIComponent(username)}`);
     return response.json();
   }
 };

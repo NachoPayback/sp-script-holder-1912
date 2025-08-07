@@ -1,0 +1,4 @@
+{
+  "buildCommand": "cd remote && npm install && npm run build",
+  "outputDirectory": "remote/dist"
+}

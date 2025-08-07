@@ -14,11 +14,44 @@ const supabase = createClient(
 export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
+  }
+
+  if (req.method === 'GET') {
+    // Handle getUserPermissions request
+    const { username } = req.query;
+    
+    if (!username) {
+      return res.status(400).json({ error: 'Username required' });
+    }
+    
+    try {
+      // Get user permissions from Supabase database
+      const { data: users, error } = await supabase
+        .from('users')
+        .select('username, permissions')
+        .eq('username', username)
+        .limit(1);
+
+      if (error || !users || users.length === 0) {
+        return res.status(404).json({ success: false, error: 'User not found' });
+      }
+
+      const user = users[0];
+      
+      return res.status(200).json({
+        success: true,
+        permissions: user.permissions || {}
+      });
+      
+    } catch (error) {
+      console.error('Get user permissions error:', error);
+      return res.status(500).json({ success: false, error: 'Failed to get user permissions' });
+    }
   }
 
   if (req.method !== 'POST') {
@@ -26,7 +59,42 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { username, password } = req.body;
+    const { username, password, token } = req.body;
+
+    // Handle token verification
+    if (token) {
+      try {
+        const decoded = JSON.parse(Buffer.from(token, 'base64').toString());
+        
+        if (decoded.expires < Date.now()) {
+          return res.status(401).json({ valid: false, error: 'Token expired' });
+        }
+        
+        // Get user from database to verify token is still valid
+        const { data: users, error } = await supabase
+          .from('users')
+          .select('username, permissions')
+          .eq('username', decoded.username)
+          .limit(1);
+
+        if (error || !users || users.length === 0) {
+          return res.status(401).json({ valid: false, error: 'Invalid token' });
+        }
+
+        const user = users[0];
+        
+        return res.status(200).json({
+          valid: true,
+          user: {
+            username: user.username,
+            permissions: user.permissions
+          }
+        });
+        
+      } catch (error) {
+        return res.status(401).json({ valid: false, error: 'Invalid token format' });
+      }
+    }
 
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password required' });
