@@ -308,11 +308,6 @@ class SPCrewHub:
         try:
             await self.ensure_async_client()
             
-            self.presence_channel = self.async_supabase.channel(
-                "hub-presence",
-                {"config": {"presence": {"key": self.machine_id}}}
-            )
-            
             presence_data = {
                 "machine_id": self.machine_id,
                 "friendly_name": self.friendly_name,
@@ -322,13 +317,46 @@ class SPCrewHub:
                 "online_at": datetime.now().isoformat()
             }
             
+            self.presence_channel = self.async_supabase.channel(
+                "hub-presence",
+                {"config": {"presence": {"key": self.machine_id}}}
+            )
+            
+            # Subscribe first and wait for confirmation
             await self.presence_channel.subscribe()
+            
+            # Small delay to ensure subscription is established
+            await asyncio.sleep(0.1)
+            
+            # Now track presence data
             await self.presence_channel.track(presence_data)
+            
+            # Send periodic presence updates every 30 seconds
+            asyncio.create_task(self._maintain_presence())
             
             self.logger.info("[green]Presence:[/green] [bright_green]Online[/bright_green]")
             
         except Exception as e:
             self.logger.error(f"Failed to start presence: {e}")
+    
+    async def _maintain_presence(self):
+        """Maintain presence with periodic updates"""
+        while self.running:
+            try:
+                await asyncio.sleep(30)
+                if self.presence_channel and self.running:
+                    presence_data = {
+                        "machine_id": self.machine_id,
+                        "friendly_name": self.friendly_name,
+                        "hub_id": self.hub_id,
+                        "scripts": [p.replace('_', ' ').title() for p in self.available_programs],
+                        "script_count": len(self.available_programs),
+                        "online_at": datetime.now().isoformat()
+                    }
+                    await self.presence_channel.track(presence_data)
+            except Exception as e:
+                self.logger.error(f"Presence maintenance error: {e}")
+                break
     
     def handle_execute_command(self, payload):
         """Handle script execution command"""

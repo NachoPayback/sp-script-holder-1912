@@ -11,7 +11,7 @@ from pathlib import Path
 
 def build_hub_exe(silent=True):
     """Build hub executable"""
-    project_root = Path(__file__).parent
+    project_root = Path(__file__).parent.parent
     hub_dir = project_root / "hub"
     
     # Source file and exe name
